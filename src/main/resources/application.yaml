@@ -1,0 +1,92 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /ApiWebManga
+
+spring:
+  application:
+    name: ApiWebManga
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: tienthinh28112004@gmail.com
+    password: lpfx qvdl kwyl kqio
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  kafka:
+    bootstrap-servers: localhost:9094
+    #cổng 9094 hay không phụ thuộc vào cách map công trong file docker
+    #do cổng kết nối kafka bên trong container sử dụng cổng 9094 nên để dùng chạy được thì có dòng port '9094:9094' để map 2 cổng anyf lại với nhau thì mới chạy được
+  data:
+    redis:
+      port: 6379
+      host: localhost
+    #docker exec -it redis redis-cli lệnh gõ docker để kiểm tra kết nối trong redis
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 736823866965-3h27864u4op3cojn478q2cspvqlpuv3o.apps.googleusercontent.com
+            client-secret: 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
+            redirect-uri: ###########################################
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+  datasource:
+    url: jdbc:mysql://localhost:3306/apiWebManga
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: admin
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 2000MB
+      max-request-size: 2000MB
+      file-size-threshold: 2KB
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    default-locale: en
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+api:
+  prefix: /ApiWebManga
+app:
+  secret: "JtwQ3bNf5oS9A1nnPh-Gj8xPZqGVzsoo6lUnOKFvtY1RVTKWeZ0axGJeUL8dFtJ7"
+  jwt:
+    token:
+      expires-in: 3600000 # 60 minutes in milliseconds
+    refresh-token:
+      expires-in: 86400000 # 24 hours in milliseconds
+  registration:
+    email:
+      token:
+        expires-in: 300000 # 5 phút
+cloudinary:
+  cloud-name: "dcuhpodqw"
+  api-key: "469646197951194"
+  api-secret: "CC7K_qhEmJUQ4Ji-DTF5hIvEUMI"
+
+#application-dev.yml
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+#    operationsSorter: method
+#    path: /swagger-ui/index.html
+    enabled: true
+openapi:
+  service:
+    api-docs: ApiWebManga
+    title: API Document
+    version: 1.1.0
+    server: http://localhost:${server.port}
+
+
+
