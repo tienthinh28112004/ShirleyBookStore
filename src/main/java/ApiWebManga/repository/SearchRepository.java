@@ -27,48 +27,55 @@ public class SearchRepository {
     @PersistenceContext//giúp inject EntityManager vào Spring Boot để làm việc với JPA.(entityManager thì tránh nên dùng autowired)
     private EntityManager entityManager;// giúp thêm, sửa, xóa, truy vấn dữ liệu trên database.
 
-    public PageResponse<List<BookDetailResponse>> getBookWithSortMultiFieldAndSearch(int page, int size, String sortBy, String userName, String... search){
+    public PageResponse<List<BookDetailResponse>> getBookWithSortMultiFieldAndSearch(int page, int size, String sortBy, String authorName, String... search){
         CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();//tạo truy vấn động
         CriteriaQuery<Book> criteriaQuery = criteriaBuilder.createQuery(Book.class);//tạo ra một truy vấn(criteriaQuery) để lấy dữ liệu entity Book bằng Jpa Criteria API
         Root<Book> root = criteriaQuery.from(Book.class);//xác định Book là bảng gốc trong truy vấn
 
         Predicate predicate = getPredicate(criteriaBuilder,root,search);
-        criteriaQuery.where(predicate);//áp dụng để tìm kiếm
 
         //tìm kiếm tác giải theo tên hoạc email
-        if(StringUtils.hasLength(userName)){//nếu User không null hoặc ""
+        if(StringUtils.hasLength(authorName)){//nếu User không null hoặc ""
             log.info("Sort Book and Join User");
             Join<Book, User> userJoin = root.join("author");//root lúc naày đại diện cho bảng book vfa thực hiện inner join với bảng User qua khóa ngoại author
-            Predicate likeToFullName = criteriaBuilder.like(userJoin.get("fullName"),"%"+userName+"%");//dùng criteriaBuider để tạo predicate
-            Predicate likeToEmail = criteriaBuilder.like(userJoin.get("email"),"%"+userName+"%");
+            Predicate likeToFullName = criteriaBuilder.like(userJoin.get("fullName"),"%"+authorName+"%");//dùng criteriaBuider để tạo predicate
+            Predicate likeToEmail = criteriaBuilder.like(userJoin.get("email"),"%"+authorName+"%");
 
             Predicate finalPredicate = criteriaBuilder.or(likeToEmail,likeToFullName);//tìm kiếm theo email hoặc username
 
             //điều kiện where(tìm kiếm)
-            criteriaQuery.where(predicate,finalPredicate);//lọc với 2 tiêu chí
+            //criteriaQuery.where(predicate,finalPredicate);//lọc với 2 tiêu chí
+            predicate= criteriaBuilder.and(predicate,finalPredicate);
         }
+        criteriaQuery.where(predicate);//áp dụng để tìm kiếm
         //điều kiện order(sắp xếp)
-        if(StringUtils.hasLength(sortBy)){
-            log.info(sortBy);
-            Pattern pattern = Pattern.compile("(\\w+?)(:)(asc|desc)");
-            Matcher matcher = pattern.matcher(sortBy);
-            if(matcher.find()){
-                String columnName = matcher.group(1);
-                log.info("1 {},2 {},3 {}",matcher.group(1),matcher.group(2),matcher.group(3));
-                if(matcher.group(3).equalsIgnoreCase("asc")){
-                    criteriaQuery.orderBy(criteriaBuilder.asc(root.get(columnName)));
-                }else{
-                    criteriaQuery.orderBy(criteriaBuilder.desc(root.get(columnName)));
-                    log.info("desc");
+        List<Order> orderList=new ArrayList<>();
+        if(sortBy !=null){
+            String[] listSort = sortBy.split(",");
+            //sử dụng list để sắp xếp
+            for(String sort :listSort){
+                Pattern pattern = Pattern.compile("(\\w+?)(:)(asc|desc)");
+                Matcher matcher = pattern.matcher(sort);
+                if(matcher.find()){
+                    log.info("sort {}",sort);
+                    String columnName = matcher.group(1);
+                    if(matcher.group(3).equalsIgnoreCase("asc")){
+                        orderList.add(criteriaBuilder.asc(root.get(columnName)));
+                    }else{
+                        orderList.add(criteriaBuilder.desc(root.get(columnName)));
+                    }
                 }
             }
+        }
+        if(!orderList.isEmpty()){
+            criteriaQuery.orderBy(orderList);
         }
         List<Book> bookList = entityManager.createQuery(criteriaQuery)//criteriaQuery ở trên là Book
                 .setFirstResult((page-1)*size)//xác định vị trí bản ghi đầu tiên
                 .setMaxResults(size)//giới hạn số lượng bản ghi trả về
                 .getResultList();
 
-        Long totalElements = getTotalElements(userName, search);
+        Long totalElements = getTotalElements(authorName, search);
 
         return PageResponse.<List<BookDetailResponse>>builder()
                 .pageNo(page)
@@ -94,12 +101,10 @@ public class SearchRepository {
             Predicate finalPre = criteriaBuilder.or(likeToFullName,likeToEmail);
 
             //nếu tồn tại Username thì tiìm kiếm bản ghi bao gồm cả điều kiện username
-            query.select(criteriaBuilder.count(root)).where(predicate,finalPre);// giá trị lấy ra là số lượng các bản ghi book thỏa mã điều kiện của predicate
-        }else{
-            //nếu không tồn tại userName,lấy số lượng bản ghi với các điều kiện trong criterilisst
-            query.select(criteriaBuilder.count(root)).where(predicate);
-        }
+            predicate=criteriaBuilder.and(predicate,finalPre);//tìm kiếm bắt buộc phải gần đúng
 
+        }
+        query.select(criteriaBuilder.count(root)).where(predicate);
         return entityManager.createQuery(query)//sử dụng câu lệnh query để lâấy ra số lượng book phù hợp
                 .getSingleResult();
     }
@@ -109,6 +114,7 @@ public class SearchRepository {
         List<SearchCriteria> criteriaList = new ArrayList<>();
         if(search != null){
             for(String s:search) {
+                log.info(s);
                 Pattern pattern = Pattern.compile("(\\w+?)([:<>!])(.*)");
                 Matcher matcher = pattern.matcher(s);
                 if(matcher.find()){

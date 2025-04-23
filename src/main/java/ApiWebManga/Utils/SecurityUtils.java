@@ -1,10 +1,5 @@
 package ApiWebManga.Utils;
 
-import ApiWebManga.Entity.User;
-import ApiWebManga.repository.UserRepository;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +29,6 @@ public class SecurityUtils {
             return Optional.of(s);
         }
         //tất cả đều trả ra email
-        return null;
+        return Optional.empty();
     }
 }

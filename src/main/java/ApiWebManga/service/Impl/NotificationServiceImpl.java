@@ -1,25 +1,29 @@
 package ApiWebManga.service.Impl;
 
-import ApiWebManga.Entity.Book;
 import ApiWebManga.Entity.Notification;
 import ApiWebManga.Entity.User;
+import ApiWebManga.Entity.UserHasRoles;
+import ApiWebManga.Enums.Role;
+import ApiWebManga.Exception.BadCredentialException;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.Utils.SecurityUtils;
 import ApiWebManga.dto.Request.NotificationCreateRequest;
-import ApiWebManga.dto.Response.BookDetailResponse;
-import ApiWebManga.dto.Response.UserResponse;
+import ApiWebManga.dto.Response.NotificationResponse;
 import ApiWebManga.repository.BookRepository;
 import ApiWebManga.repository.NotificationRepository;
 import ApiWebManga.repository.UserRepository;
 import ApiWebManga.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -29,65 +33,71 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
     private final BookRepository bookRepository;
-    @Override
-    public Notification insertNotification(NotificationCreateRequest request) {
-        Long userId = getUserIdCurrent();
-        User user = userRepository.findById(userId)
-                .orElseThrow(()->new NotFoundException("User not found"));
 
-        Book book = bookRepository.findById(request.getBookId())
-                .orElseThrow(() -> new NotFoundException("Book not found"));
-
-        //cẩn thận trường hợp book không có chapter như yêu cầu
-        if(request.getChapterId()==null || request.getChapterId()>book.getChapters().size()){
-            throw new NotFoundException("Chapter not found");
-        }
-        Notification existingNotification = notificationRepository.findByUserIdAndBookId(userId, request.getBookId());
-        if (existingNotification != null) {
-            // Nếu đã tồn tại, cập nhật thông báo
-            existingNotification.setEnabled(true);
-            existingNotification.setMessage(request.getMessage());
-            return notificationRepository.save(existingNotification);
-        }
-        return notificationRepository.save(
-                Notification.builder()
-                        .bookId(request.getBookId())
-                        .chapterId(request.getChapterId())
-                        .userId(userId)
-                        .message(request.getMessage())
-                        .isEnabled(true)//người dùng chưa tắt thông báo về quyển sách này
-                        .build()
-        );//2 trường createBy và updateBy chưa đưa vào được vì nó không kết thừa nhưng sẽ xử lí sau
-
-
-    }
-
-    @Override
-    public List<Notification> getRecentNotifications() {
-        Long userId =getUserIdCurrent();
-        return notificationRepository.findRecentByUserId(userId, PageRequest.of(0,10));
-    }
-
-    @Override//lấy ra dánh sánh quyển sách mà user theo doi
-    public List<BookDetailResponse> getNotificationBookIds() {
-        Long userId =getUserIdCurrent();
-        List<Long> bookIds=notificationRepository.findBookIdsByUserId(userId);
-        List<Book> listBook= bookRepository.findAllById(bookIds);
-        return listBook.stream().map(BookDetailResponse::convert).collect(Collectors.toList());
-    }
-
-    @Override//lấy ra danh sách người dùng thoe dõi quyển sách anyf
-    public List<UserResponse> getUsersFollowingBook(Long bookId) {
-        List<Long> userIds= notificationRepository.findUserIdsByBookId(bookId);
-        List<User> listUser=userRepository.findAllById(userIds);
-        return listUser.stream().map(UserResponse::convert).collect(Collectors.toList());
-    }
-
-    public Long getUserIdCurrent(){
+    @PreAuthorize("isAuthenticated()")
+    public List<NotificationResponse> getNotificationsForCurrentUser(){
         String email = SecurityUtils.getCurrentLogin()
-                .orElseThrow(()->new NotFoundException("User chưa đăng nhập"));
+                .orElseThrow(()->new BadCredentialException("Email không hợp lệ"));
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(()->new NotFoundException("User not found"));
-        return user.getId();
+
+        List<Notification> notifications = notificationRepository.findByUserIdOrderByIdDesc(user.getId());
+        if(notifications == null || notifications.isEmpty()){
+            return Collections.emptyList();
+        }
+        return notifications.stream().map(NotificationResponse::convert).collect(Collectors.toList());
     }
+
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public void createNotification(NotificationCreateRequest request){
+        String email = SecurityUtils.getCurrentLogin()
+                .orElseThrow(()->new NotFoundException("email not found"));
+
+        User  userSender= userRepository.findByEmail(email)
+                .orElseThrow(()->new NotFoundException("User not found"));
+
+        User userReceiver = userRepository.findById(request.getUserReceiverId())
+                .orElseThrow(()->new NotFoundException("User not found"));
+        boolean admin=false;
+        for(UserHasRoles x:userSender.getUserHasRoles()){
+            if(Objects.equals(x.getRole().getName(), Role.ADMIN)){
+                admin=true;
+            }
+        }
+        //if(admin){
+            Notification notification = Notification.builder()
+                    .user(userReceiver)//thông tin người nhận
+                    .message(request.getMessage())
+                    .title(request.getTitle())
+                    .url(request.getUrl())
+                    .isRead(false)//người nhận chưa đọc
+                    .avatarUrl(userSender.getAvatarUrl())
+                    .build();
+
+            notificationRepository.save(notification);
+//        }else{
+//            throw new BadCredentialException("Bạn không có quyền");
+//        }
+
+    }
+
+    @Transactional
+    public void deleteNotification(Long notificationId){
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(()->new NotFoundException("notification not found"));
+
+        notificationRepository.delete(notification);
+    }
+
+    public void markAsRead(Long notificationId){
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(()->new NotFoundException("notification not found"));
+
+        notification.setIsRead(true);//đánh dấu đã đọc
+        notificationRepository.save(notification);
+    }
+
+
 }

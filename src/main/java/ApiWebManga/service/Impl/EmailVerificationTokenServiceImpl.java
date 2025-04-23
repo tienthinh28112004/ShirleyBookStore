@@ -5,7 +5,6 @@ import ApiWebManga.Entity.User;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.repository.EmailVerificationTokenRepository;
 import ApiWebManga.service.EmailVerificationTokenService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +54,7 @@ public class EmailVerificationTokenServiceImpl implements EmailVerificationToken
             //do ở phần user chúng ta đã save nó 1 lần rồi,trước acr khi xác minh nên ở đây chúng ta phải kiểm tra lại
             //đề phòng trường hợp chúng ta save và có gửi email nhưng người dùng không verify
             //kiểm tra xem EmailVerificationToken còn hạn hay không
+            deleteByUserId(emailVerificationToken.getUser().getId());//nếu token hết hạn thì throw ra lỗi và xóa cái token cũ đi
             throw new BadCredentialsException("EmailVerificationToken hết hạn rồi");
         }
         return emailVerificationToken.getUser();
@@ -70,11 +70,16 @@ public class EmailVerificationTokenServiceImpl implements EmailVerificationToken
     }
     public String generateToken(){
         Random random =new Random();
-        long token =10000000 + random.nextInt(90000000);// Mã OTP 6 chữ số
+        long token =10000000 + random.nextInt(90000000);// Mã OTP 8 chữ số
+        if(emailVerificationTokenRepository.existsByToken(String.valueOf(token))){
+            while(!emailVerificationTokenRepository.existsByToken(String.valueOf(token))){
+                token =10000000 + random.nextInt(90000000);// Mã OTP 8 chữ số
+            }
+        }
         return String.valueOf(token);
     }
     //nguyên lý của xác thực mail là người dùng tạo tài khoản
     //chúng ta gửi Email verify token vầ có thời hạn 5 phút trong mail của người dùng,đồng thời nó cũng sẽ luuw 1 bản trong csdl
-    //khi người dùng nhấn vào email thì n sẽ tự động link đến chỗ xác minh
-    //ở chỗ xác minh nó sẽ xác định thời hạn xác minh và xóa cái emial verify token ấy khỏi csdl,đồng thời lưu user
+    //người dùng truy cập email của mình và lấy ra được mã OTP
+    //người dùng cần nhập email ây trở lại web để xác nhận tài khoản
 }

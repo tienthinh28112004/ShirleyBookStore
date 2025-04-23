@@ -1,10 +1,14 @@
 package ApiWebManga.dto.Response;
 
 import ApiWebManga.Entity.Comment;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -14,12 +18,23 @@ import java.time.LocalDateTime;
 public class CommentResponse {
     private Long id;
 
-    private String content;
+    private Long bookId;
 
-    private UserResponse userResponse;//thông tin user(chỉ lấy được fullname là hưu ích thôi)
+    private String name;
+
+    private String avatar;
+
+    private String content;
 
     private String elapsed;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updatedAt;
+
+    List<CommentResponse> replies = new ArrayList<>();
     public static String getTimeElapsed(LocalDateTime createDate){
         if(createDate == null){
             return "không có thông tin";
@@ -38,9 +53,16 @@ public class CommentResponse {
     public static CommentResponse convert(Comment comment){
         return CommentResponse.builder()
                 .id(comment.getId())
+                .avatar(comment.getUser().getAvatarUrl())
+                .bookId(comment.getBook().getId())
                 .content(comment.getContent())
-                .userResponse(UserResponse.convert(comment.getUser()))
-                .elapsed(getTimeElapsed(comment.getCreateAt()))
+                .name(comment.getUser().getFullName())
+                .elapsed(getTimeElapsed(comment.getCreatedAt()))
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getUpdatedAt())
+                .replies(comment.getReplies()!=null?
+                        comment.getReplies().stream().map(CommentResponse::convert)
+                        .collect(Collectors.toList()) : new ArrayList<>())
                 .build();
     }
 }

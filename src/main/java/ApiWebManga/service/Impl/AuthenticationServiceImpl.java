@@ -6,11 +6,10 @@ import ApiWebManga.Entity.UserHasRoles;
 import ApiWebManga.Enums.Role;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.Exception.RefreshTokenExpiredException;
-import ApiWebManga.dto.Request.LoginRequest;
-import ApiWebManga.dto.Request.LogoutRequest;
-import ApiWebManga.dto.Request.UserCreationRequest;
-import ApiWebManga.dto.Response.RefreshTokenResponse;
-import ApiWebManga.dto.Response.SignInResponse;
+import ApiWebManga.dto.Request.*;
+import ApiWebManga.dto.Response.*;
+import ApiWebManga.repository.HttpClient.OutboundIdentityClient;
+import ApiWebManga.repository.HttpClient.OutboundUserClient;
 import ApiWebManga.repository.InvalidateTokenRepository;
 import ApiWebManga.repository.RolesRepository;
 import ApiWebManga.repository.UserRepository;
@@ -19,6 +18,7 @@ import ApiWebManga.service.EmailVerificationTokenService;
 import ApiWebManga.service.JwtService;
 import ApiWebManga.service.UserService;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -27,15 +27,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -60,6 +57,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final RedisServiceImpl redisService;
 
+    private final OutboundIdentityClient outboundIdentityClient;
+
+    private final OutboundUserClient outboundUserClient;
+
     @Value("${app.secret}")
     private String appSecret;
 
@@ -68,6 +69,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Value("${app.jwt.refresh-token.expires-in}")
     private Long refreshTokenExpiresIn;
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    private String clientSecret;
+    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    private String redirectUri;
+    private final String grant_type = "authorization_code";
     @Override
     public User register(UserCreationRequest request){
         return userService.createUser(request);
@@ -171,69 +179,99 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     }
 
+    public IntrospectResponse introspect(IntrospectRequest request) {
+        String token = request.getAccessToken();
+
+        User user = jwtService.getUserFromToken(token);
+
+        boolean isValid = true;
+        List<String> scope=new ArrayList<>();
+        try{
+            boolean verify = jwtService.verificationToken(token,user);
+            SignedJWT signedJWT=jwtService.extractUserSignedJWT(token);
+            List<String> authority= (List<String>) SignedJWT.parse(token).getJWTClaimsSet().getClaim("Authority");
+            scope.addAll(authority);
+            log.info("arrayLisst ={}",scope);
+        }catch (Exception e){
+            isValid=false;
+        }
+        log.info("isValid {}",isValid);
+        return IntrospectResponse.builder()
+                .valid(isValid)
+                .scope(scope)
+                .build();
+    }
+
     @Override
+    @Transactional
     public String verifyEmail(String token){//token ở đây là của EmailVerificationToken,chứ không phải token dùng để đăng nhập
         log.info("Verifying e-mail with token: {}",token);
         User user= emailVerificationTokenService.getUserByToken(token);
         user.setEmailVerifiedAt(LocalDateTime.now());//thười gian xác minh email
+        user.setActive(true);//xác thực tạo user thành công
         userRepository.save(user);//chính thức là lưu user ở đây
 
         emailVerificationTokenService.deleteByUserId(user.getId());//xác minh xong thì xóa cái EmailVerificationToken của user này ra khỏi csdl
         log.info("E-mail verified with token: {}",token);
         return "Xác thực thành công";
     }
+    @Transactional
+    public SignInResponse loginWithGoogle(String code,HttpServletResponse response){//nhận lại code từu fontend truyền lên
+        ExchangeTokenResponse result = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
+                        .code(code)//code này là do google trả về có hiệu lúc trong vài phút và dùng để lấy accessToken từ google
+                        .clientId(clientId)
+                        .clientSecret(clientSecret)//dù có code nhưng fontend không thể tự giải mã được mà phải nhờ backend do backend có clientSecret
+                        .redirectUri(redirectUri)//đường dẫn của fontend gửi lên request này
+                        .grantType(grant_type)
+                .build());
+        //result ở đây có các giá trị khác nhau nhưng chỉ cần quan tâm đến accessToken mà google trả về thôi(dổi nó lấy thông tin user để dùng)
+        OutboundUserResponse userInfo = outboundUserClient.getUserInfo("json", result.getAccessToken());//lấy dữ liệu dạng json và truyền vào accessToken lấy được từ google
 
-    public SignInResponse createAndLoginGoogle(OAuth2User oAuth2User){//đăng nhập bằng google cần cả fontend nữa nên chưa dùng được
-        String email = oAuth2User.getAttribute("email");//lấy email từ trong OAuth2User của máy tính
-        try {
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(()->new NotFoundException("email invalid"));
-            String accessToken = jwtService.generateAccessToken(user);
-            String refreshToken = jwtService.generateRefreshToken(user);
+        Roles roles = rolesRepository.findByName(String.valueOf(Role.USER))
+                .orElseThrow(()->new NotFoundException("Role not found"));
+        //nếu tồn tại user rồi thì thôi còn không thì tạo mới
+        User user = userRepository.findByEmail(userInfo.getEmail()).orElseGet(()->userRepository.save(User.builder()
+                        .email(userInfo.getEmail())
+                        .fullName(userInfo.getName())
+                        .avatarUrl(userInfo.getPicture())
+                        .isActive(userInfo.isVerified())
+                        .emailVerifiedAt(userInfo.isVerified()?LocalDateTime.now():null)
+                .build()));
 
-            user.setRefreshToken(refreshToken);
-            userRepository.save(user);
+        Set<UserHasRoles> rolesList = new HashSet<>();
+        UserHasRoles userHasRole=UserHasRoles.builder()
+                .role(roles)
+                .user(user)
+                .build();
+        rolesList.add(userHasRole);
+        user.setUserHasRoles(rolesList);
 
-            return SignInResponse.builder()
-                    .userId(user.getId())
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
-                    .accessTokenExp(tokenExpiresIn)
-                    .refreshTokenExp(refreshTokenExpiresIn)
-                    .build();
+        String accessToken= jwtService.generateAccessToken(user);
+        String refreshToken= jwtService.generateRefreshToken(user);
 
-        }catch (Exception e){
-            Roles role = rolesRepository.findByName(String.valueOf(Role.USER))
-                    .orElseThrow(()-> new NotFoundException("role nay khong ton tai"));
+        user.setRefreshToken(refreshToken);
 
-            User user = User.builder()
-                            .email(email)
-                            .phoneNumber("0379489012")
-                            .fullName(oAuth2User.getAttribute("name"))
-                            .password("Duong20022004@")
-                            .build();
-            UserHasRoles userHasRole = UserHasRoles.builder()
-                    .role(role)
-                    .user(user)
-                    .build();
-            Set<UserHasRoles> listUserHashRole =new HashSet<>();
-            listUserHashRole.add(userHasRole);
+        Cookie cookie=new Cookie("refreshToken",refreshToken);
+        cookie.setMaxAge(24*60*60);//thời hạn 1 ngày
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);//nếu true thì chỉ có https mới thông qua thôi
+        cookie.setDomain("localhost");
+        cookie.setPath("/ApiWebManga");
 
-            String accessToken = jwtService.generateAccessToken(user);
-            String refreshToken = jwtService.generateRefreshToken(user);
-
-            user.setRefreshToken(refreshToken);
-            user.setUserHasRoles(listUserHashRole);
-
-            userRepository.save(user);
-
-            return SignInResponse.builder()
-                    .userId(user.getId())
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
-                    .accessTokenExp(tokenExpiresIn)
-                    .refreshTokenExp(refreshTokenExpiresIn)
-                    .build();
-        }
+        response.addCookie(cookie);
+        return SignInResponse.builder()
+                .userId(user.getId())
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .accessTokenExp(tokenExpiresIn)
+                .refreshTokenExp(refreshTokenExpiresIn)
+                .roleList(user.getUserHasRoles().stream().map(userHasRoles -> userHasRoles.getRole().getName()).collect(Collectors.toList()))//lưu ra 1 list role để cho fontend phân biệt
+                .build();
     }
+//1,Frontend redirect người dùng đến Google để đăng nhập.
+//2️,Google redirect về frontend có đường dân redirectUri kèm theo mã code(1 chuỗi ngẫu nhiên do google tạo có hiệu lực vài phút).
+//3,️Frontend nhận thông tin từ google trả về và gửi code lên backend.
+//4️,Backend đổi code lấy Access Token từ Google(sử dung exchangeToken để gửi code ngẫu nhiên này lại cho google đổi lấy accessToken của google).
+//5, Backend dùng Access Token lấy thông tin user từ Google.(sử dụng getUserInfo giải mã accessToken và lấy thông tin từ google)
+//6,Backend tạo JWT Token và gửi về frontend.(nếu có tồn tại user rồi thì gửi accessToken của hệ thông và luôn,mà nếu chưa có thì tạo ra người dùng và gửi về AccessToken)
 }

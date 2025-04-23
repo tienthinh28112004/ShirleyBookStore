@@ -1,88 +1,47 @@
 package ApiWebManga.config;
 
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
+@Configuration
 //đây là file dùng để thanh toán vnpay lấy được trên vnpay dev test(tuy nhiên chỉ chạy được trong môi trường test vì nếu muốn chạy thật thì pahir đăng kí doanh nghiêp)
 public class VnpayConfig {
-    public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8080/vnpay_jsp/vnpay_return.jsp";
-    public static String vnp_TmnCode = "VZCBDZF0";
-    public static String vnp_Version = "2.1.0";
-    public static String vnp_Command = "pay";
-    public static String secretKey = "Z1RRRC01ML3KT0NZNH4U2RNXQN8VFXP7";
-    public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
-    //Util for VNPAY
-    public static String hashAllFields(Map fields) {
-        List fieldNames = new ArrayList(fields.keySet());
-        Collections.sort(fieldNames);
-        StringBuilder sb = new StringBuilder();
-        Iterator itr = fieldNames.iterator();
-        while (itr.hasNext()) {
-            String fieldName = (String) itr.next();
-            String fieldValue = (String) fields.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                sb.append(fieldName);
-                sb.append("=");
-                sb.append(fieldValue);
-            }
-            if (itr.hasNext()) {
-                sb.append("&");
-            }
-        }
-        return hmacSHA512(secretKey,sb.toString());
-    }
+    @Getter
+    @Value("${payment.vnPay.url}")
+    private String vnp_PayUrl;
 
-    public static String hmacSHA512(final String key, final String data) {
-        try {
+    @Value("${payment.vnPay.returnUrl}")
+    private String vnp_ReturnUrl;//sau khi vnpay xử lý thành công thì nó sẽ vào backend v xử lý tại đây
 
-            if (key == null || data == null) {
-                throw new NullPointerException();
-            }
-            final Mac hmac512 = Mac.getInstance("HmacSHA512");
-            byte[] hmacKeyBytes = key.getBytes();
-            final SecretKeySpec secretKey = new SecretKeySpec(hmacKeyBytes, "HmacSHA512");
-            hmac512.init(secretKey);
-            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
-            byte[] result = hmac512.doFinal(dataBytes);
-            StringBuilder sb = new StringBuilder(2 * result.length);
-            for (byte b : result) {
-                sb.append(String.format("%02x", b & 0xff));
-            }
-            return sb.toString();
+    @Value("${payment.vnPay.tmnCode}")
+    private String vnp_TmnCode;
 
-        } catch (Exception ex) {
-            return "";
-        }
-    }
+    @Getter
+    @Value("${payment.vnPay.secretKey}")
+    private String secretKey;
 
-    public static String getIpAddress(HttpServletRequest request) {
-        String ipAdress;
-        try {
-            ipAdress = request.getHeader("X-FORWARDED-FOR");
-            if (ipAdress == null) {
-                ipAdress = request.getRemoteAddr();
-            }
-        } catch (Exception e) {
-            ipAdress = "Invalid IP:" + e.getMessage();
-        }
-        return ipAdress;
-    }
+    @Value("${payment.vnPay.version}")
+    private String vnp_Version;
 
-    public static String getRandomNumber(int len) {
-        Random rnd = new Random();
-        String chars = "0123456789";
-        StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len; i++) {
-            sb.append(chars.charAt(rnd.nextInt(chars.length())));
-        }
-        return sb.toString();
+    @Value("${payment.vnPay.command}")
+    private String vnp_Command;
+
+    @Value("${payment.vnPay.orderType}")
+    private String orderType;
+
+    public Map<String,String> getVNPayConfig(){
+        Map<String,String> vnpParamsMap = new HashMap<>();
+        vnpParamsMap.put("vnp_Version",this.vnp_Version);
+        vnpParamsMap.put("vnp_Command",this.vnp_Command);
+        vnpParamsMap.put("vnp_TmnCode",this.vnp_TmnCode);
+        vnpParamsMap.put("vnp_CurrCode","VND");
+        vnpParamsMap.put("vnp_OrderType",this.orderType);
+        vnpParamsMap.put("vnp_Locale","vn");
+        vnpParamsMap.put("vnp_ReturnUrl",this.vnp_ReturnUrl);
+        return vnpParamsMap;
     }
 }

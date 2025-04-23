@@ -2,12 +2,12 @@ package ApiWebManga.Controller;
 
 import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.CartAddItemRequest;
-import ApiWebManga.dto.Response.CartInformationResponse;
+import ApiWebManga.dto.Response.CartTotalResponse;
 import ApiWebManga.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
@@ -18,30 +18,39 @@ public class CartController {
 
     private final CartService cartService;
 
-//    @PostAuthorize("USER")//vào phát là đã có giỏ hàng rồi
-//    @PostMapping("/carts")
-//    ApiResponse<CartInformationResponse> creationCart() {
-//        var result = cartService.createDefaultCart();
-//        return ApiResponse.<CartInformationResponse>builder()
-//                .message("Created success")
-//                .result(result)
-//                .build();
-//    }
-
-    @PostAuthorize("USER")
-    @DeleteMapping("/carts/addItem")
-    ApiResponse<CartInformationResponse> addItemCart(@RequestBody @Valid CartAddItemRequest request) {
-        return ApiResponse.<CartInformationResponse>builder()
-                .message("Delete cart success")
-                .result(cartService.addItemCart(request))
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/addOrUpdateItem")
+    ApiResponse<CartTotalResponse> addItemCart(@RequestBody @Valid CartAddItemRequest request) {
+        return ApiResponse.<CartTotalResponse>builder()
+                .message("update cart success")
+                .result(cartService.addOrUpdateItemCart(request))
                 .build();
     }
-    @PostAuthorize("USER")
-    @DeleteMapping("/carts/{bookId}")
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/detailCart")
+    ApiResponse<CartTotalResponse> DetailCart() {
+        return ApiResponse.<CartTotalResponse>builder()
+                .message("update cart success")
+                .result(cartService.informationCart())
+                .build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/delete/{bookId}")
     ApiResponse<Void> deleteItemCart(@PathVariable Long bookId) {
+        cartService.deleteItemCart(bookId);
         return ApiResponse.<Void>builder()
                 .message("Delete cart success")
-                .result(cartService.deleteItemCart(bookId))
+                .build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/deleteAll")
+    ApiResponse<Void> deleteAllItemCart() {
+        cartService.clearAllItemCart();
+        return ApiResponse.<Void>builder()
+                .message("Delete all item cart success")
                 .build();
     }
 

@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +18,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import java.io.IOException;
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAccessDined implements AccessDeniedHandler {
     private  final LocalizationUtils localizationUtils;
     @Override
@@ -31,7 +33,7 @@ public class JwtAccessDined implements AccessDeniedHandler {
         //do write trả về kiểu dữ liệu dạng String nên ở đây chúng ta phải dùng ObjectMapper để convert apiResponse nó sang dạng json
         ObjectMapper objectMapper = new ObjectMapper();//dùng objectMapper ở đây để convert từ object sang dạng json
         response.getWriter().write(objectMapper.writeValueAsString(responseEntity));
-
+        log.info("bạn không có quyền");
         response.flushBuffer();//flushBuffer giúp gửi cái request này về client
     }
 }

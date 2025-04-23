@@ -1,5 +1,6 @@
 package ApiWebManga.dto.Response;
 
+import ApiWebManga.Entity.OrderDetail;
 import lombok.*;
 
 @Getter
@@ -14,4 +15,15 @@ public class OrderDetailResponse {
     private String thumbnail;
     private Long quantity;
     private Long totalPrice;
+
+    public static OrderDetailResponse convert(OrderDetail orderDetail){
+        return OrderDetailResponse.builder()
+                .bookId(orderDetail.getBook().getId())
+                .title(orderDetail.getBook().getTitle())
+                .priceBook(orderDetail.getBook().getPrice())
+                .thumbnail(orderDetail.getBook().getThumbnail())
+                .quantity(orderDetail.getQuantity())
+                .totalPrice(orderDetail.getTotalMoneyBook())
+                .build();
+    }
 }

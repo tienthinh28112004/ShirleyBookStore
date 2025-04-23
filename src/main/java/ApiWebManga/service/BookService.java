@@ -16,7 +16,7 @@ public interface BookService {
     //lấy ra các sách dựa vào page,size
     PageResponse<List<BookDetailResponse>> getAllBook(int page, int size);
     //tìm kiếm và săắp xếp sách theo các yêu cầu khác nhau (có join bảng user)
-    PageResponse<List<BookDetailResponse>> getBoolWithSortAndMultiFieldAndSearch(int page, int size, String sortBy, String userName, String...search);
+    PageResponse<List<BookDetailResponse>> getBoolWithSortAndMultiFieldAndSearch(int page, int size,String sortBy, String authorName, String...search);
     //lấy ra danh sách book bằng cách tìm kiếm theo các tiêu chí(tìm kiếm theo 1 tiêu chí hay sao ấy (\-.-/)
     PageResponse<List<BookDetailResponse>> getBookWithSortAndSearchByKeyword(int page, int size, String keyword);
     PageResponse<BookElasticSearch> searchElastic(int page,int size,String keyword);//dùng cái này để truy vấn,sẽ có thể sắp xếp theo tiêu chí

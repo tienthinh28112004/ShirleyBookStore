@@ -1,6 +1,5 @@
 package ApiWebManga.Controller;
 
-import ApiWebManga.Entity.Category;
 import ApiWebManga.Entity.Chapter;
 import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.ChapterCreateRequest;
@@ -11,7 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,7 +29,7 @@ public class ChapterController {
 //    ChapterResponse getLatestChapterAndTime(Long bookId);
 //    List<ChapterResponse> getRecentChapterByBookWithElapsedTime(Long bookId);
     private final ChapterService chapterService;
-    @PostAuthorize("ADMIN")
+    @PreAuthorize("hasAuthority('AUTHOR')")
     @PostMapping(value = "/upLoadChapter")
     @Operation(summary = "upload chapter")
     public ApiResponse<BookDetailResponse> upLoadChapter (
@@ -42,7 +41,6 @@ public class ChapterController {
             .build();
     }
 
-    @PostAuthorize("USER")
     @GetMapping(value = "/getChapterById/{chapterId}")
     @Operation(summary = "information chapter by id")
     public ApiResponse<Chapter> getChapterById (@PathVariable Long chapterId) {
@@ -52,7 +50,6 @@ public class ChapterController {
                 .build();
     }
 
-    @PostAuthorize("USER")
     @GetMapping(value = "/findPrevChapter/{bookId}/{chapterId}")//lấy chapter trước so với chapter trong sách
     @Operation(summary = "find prev chapter")
     public ApiResponse<Chapter> findPrevChapter (@PathVariable Long bookId,@PathVariable Long chapterId) {
@@ -61,7 +58,7 @@ public class ChapterController {
                 .result(chapterService.findPrevChapter(bookId, chapterId))
                 .build();
     }
-    @PostAuthorize("USER")
+
     @GetMapping(value = "/findNextChapter/{bookId}/{chapterId}")//lấy chapter trước so với chapter trong sách
     @Operation(summary = "find next chapter")
     public ApiResponse<Chapter> findNextChapter (@PathVariable Long bookId,@PathVariable Long chapterId) {
@@ -71,7 +68,7 @@ public class ChapterController {
                 .build();
     }
 
-    @PostAuthorize("USER")
+
     @GetMapping(value = "/findChaptersByBookId/{bookId}")
     @Operation(summary = "list chapter by book")
     public ApiResponse<List<Chapter>> findChaptersByBookId (@PathVariable Long bookId) {
@@ -81,7 +78,7 @@ public class ChapterController {
                 .build();
     }
 
-    @PostAuthorize("USER")
+
     @GetMapping(value = "/getRecentChaptersWithElapsedTime")//lấy ra các chương mới nhất theo ngày tạo(tất cả các quyển)
     @Operation(summary = "Get Recent Chapter With Elapsed Time")
     public ApiResponse<List<ChapterResponse>> getRecentChaptersWithElapsedTime () {
@@ -90,8 +87,8 @@ public class ChapterController {
                 .result(chapterService.getRecentChaptersWithElapsedTime())
                 .build();
     }
-    @PostAuthorize("USER")
-    @GetMapping(value = "/getLatestChapterAndTime/{bookId}")//lấy ra các chương mới nhất theo ngày tạo ứng với mỗi quyển sách
+
+    @GetMapping(value = "/getLatestChapterAndTime/{bookId}")//lấy chương mới nhất theo ngày tạo ứng với mỗi quyển sách
     @Operation(summary = "Get Latest Chapter And Time")
     public ApiResponse<ChapterResponse> getLatestChapterAndTime (@PathVariable Long bookId) {
         return ApiResponse.<ChapterResponse>builder()
@@ -100,7 +97,6 @@ public class ChapterController {
                 .build();
     }
 
-    @PostAuthorize("USER")
     @GetMapping(value = "/getRecentChapterByBookWithElapsedTime/{bookId}")//lấy ra danh sách các chương mới nhất theo ngày tạo ứng với quyển sách
     @Operation(summary = "Get Recent Chapter By Book With Elapsed Time")
     public ApiResponse<List<ChapterResponse>> getRecentChapterByBookWithElapsedTime (@PathVariable Long bookId) {

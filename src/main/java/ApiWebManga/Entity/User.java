@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "user")
+@Table(name = "users")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "fullName", length = 255)
@@ -40,16 +40,6 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     String refreshToken;
 
-    @Column(name = "facebook_account_id")
-    private int facebookAccountId;
-
-    @Column(name = "google_account_id")
-    private int googleAccountId;
-
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "gender")
-//    Gender gender;
-
     @Column(name = "is_active")
     boolean isActive;
 
@@ -61,9 +51,11 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     LocalDate birthday;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE)
+    @JsonManagedReference
     private EmailVerificationToken emailVerificationToken;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private Cart cart;
 
     @Column(name = "email_verified_at")
@@ -72,12 +64,13 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @OneToMany(mappedBy = "author",cascade = CascadeType.ALL)
     private List<Book> books;//cái này là có tác dụng với người là tác giả truyện thôi(chứ bth thì không áp dụng với các user bình thương)
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<UserHasRoles> userHasRoles;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    @JsonManagedReference//được đặt ở phía cha khi chuyển thành json sẽ được hiển thị trong json
-    private List<Comment> comments = new ArrayList<>();
+    @JsonManagedReference//để phòng hờ thôi vì chủ yếu mình đưa ra userReponse mà
+    private List<Order> orders = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<UserHasRoles> userHasRoles;
 
     //các phương thức dưới là các phương thức kết thwuaf được từ các userdetail
     @Override//phân role và vai trò tất cả ở trong này

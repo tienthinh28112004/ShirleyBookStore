@@ -10,7 +10,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public  class PaymentResponse implements Serializable {
-    private String status;
+    private String code;
     private String message;
-    private String URL;
+    private String paymentUrl;
 }

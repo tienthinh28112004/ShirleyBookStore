@@ -10,13 +10,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class NotificationCreateRequest {
-    private Long userId;
 
-    private Long bookId;
+    private Long userReceiverId;
 
-    private Long chapterId;
+    private String title;
 
     private String message;
 
-    private String link;//dùng để chuyển hướng đến trang khác
+    private String url;
 }

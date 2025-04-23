@@ -1,15 +1,13 @@
 package ApiWebManga.service;
 
-import ApiWebManga.Entity.Notification;
 import ApiWebManga.dto.Request.NotificationCreateRequest;
-import ApiWebManga.dto.Response.BookDetailResponse;
-import ApiWebManga.dto.Response.UserResponse;
+import ApiWebManga.dto.Response.NotificationResponse;
 
 import java.util.List;
 
 public interface NotificationService {
-    Notification insertNotification(NotificationCreateRequest request);
-    List<Notification> getRecentNotifications();
-    List<BookDetailResponse> getNotificationBookIds();
-    List<UserResponse> getUsersFollowingBook(Long bookId);
+    List<NotificationResponse> getNotificationsForCurrentUser();
+    void createNotification(NotificationCreateRequest request);
+    void deleteNotification(Long notificationId);
+    void markAsRead(Long notificationId);
 }

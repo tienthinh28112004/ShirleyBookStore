@@ -1,5 +1,6 @@
 package ApiWebManga.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,7 @@ public class EmailVerificationToken{
 
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="user_id",nullable = false)
+    @JsonBackReference
     private User user;
 
     @Column(name ="token",unique = true,nullable = false)

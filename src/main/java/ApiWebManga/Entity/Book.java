@@ -1,13 +1,10 @@
 package ApiWebManga.Entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,9 +42,6 @@ public class Book extends AbstractEntity<Long> {
     @Column(name = "book_path", columnDefinition = "TEXT")
     private String bookPath;
 
-    @Column(name = "language")
-    private String language;
-
     @Column(name = "view")
     @ColumnDefault("0")
     private Long views;
@@ -61,13 +55,13 @@ public class Book extends AbstractEntity<Long> {
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<BookHasCategory> category;
+    private List<BookHasCategory> category=new ArrayList<>();
 
     @OneToMany(mappedBy = "book",cascade = CascadeType.ALL,orphanRemoval = true)
     @JsonManagedReference//được đặt ở phía cha khi chuyển thành json sẽ được hiển thị trong json tránh được vòng lặp vô hạn
     private List<Chapter> chapters =new ArrayList<>();
 
-    @OneToMany(mappedBy = "book",cascade = CascadeType.ALL,orphanRemoval = true)
+    @OneToMany(mappedBy = "book",cascade = CascadeType.ALL,orphanRemoval = true,fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Comment> comments=new ArrayList<>();
 }

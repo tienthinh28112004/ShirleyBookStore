@@ -8,17 +8,21 @@ import ApiWebManga.Enums.OrderStatus;
 import ApiWebManga.Enums.PaymentExpression;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.Utils.SecurityUtils;
+import ApiWebManga.dto.Request.OrderDetailRequest;
 import ApiWebManga.dto.Request.OrderRequest;
 import ApiWebManga.dto.Response.OrderResponse;
+import ApiWebManga.dto.Response.PageResponse;
 import ApiWebManga.repository.BookRepository;
 import ApiWebManga.repository.OrderRepository;
 import ApiWebManga.repository.UserRepository;
+import ApiWebManga.service.CartService;
 import ApiWebManga.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -40,36 +44,43 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
+    private final CartService cartService;
     //cái anyf sẽ chỉ được động bởi admin
 
 
-    public OrderResponse createOrder(OrderRequest orderRequest){
-        String email= SecurityUtils.getCurrentLogin().orElseThrow(()->new NotFoundException("người dùng chưa đăng nhập"));
-        User user=userRepository.findByEmail(email).orElseThrow(()->new NotFoundException("User not found"));
+    public OrderResponse createOrder(OrderRequest request){
+        String email= SecurityUtils.getCurrentLogin()
+                .orElseThrow(()->new NotFoundException("người dùng chưa đăng nhập"));
+
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->new NotFoundException("User not found"));
+
         Order order=Order.builder()
-                .fullName(orderRequest.getFullName())
-                .phoneNumber(orderRequest.getPhoneNumber())
-                .address(orderRequest.getPhoneNumber())
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .address(request.getAddress())
                 .orderDate(LocalDateTime.now())
-                .note(orderRequest.getNote())
+                .note(request.getNote())
                 .user(user)
                 .orderStatus(OrderStatus.PENDING)
-                .paymentExpression(PaymentExpression.DIRECTPAYMENT)
+                .paymentExpression(PaymentExpression.valueOf(String.valueOf(request.getPaymentExpression())))
                 .build();
         List<OrderDetail> orderDetails=new ArrayList<>();
         long totalMoney=0;
-        for(int i=0;i<orderRequest.getDetailRequests().size();i++){
-            Book book=bookRepository.findById(orderRequest.getDetailRequests().get(i).getBookId()).orElseThrow(()->new NotFoundException("Book Not found"));
-            long totalMoneyBook = book.getPrice()*orderRequest.getDetailRequests().get(i).getQuantity();
+        for(OrderDetailRequest x:request.getDetailRequests()){
+            Book book=bookRepository.findById(x.getBookId())
+                    .orElseThrow(()->new NotFoundException("Book Not found"));
+
+            long totalMoneyBook = book.getPrice()*x.getQuantity();
             totalMoney+=totalMoneyBook;
             orderDetails.add(OrderDetail.builder()
                     .book(book)
-                    .price(book.getPrice())
                     .order(order)
-                    .quantity(orderRequest.getDetailRequests().get(i).getQuantity())
+                    .quantity(x.getQuantity())
                     .totalMoneyBook(totalMoneyBook)
                     .build());
         }
+        //khi người dùng bấm thanh toán thì set tất cả giá trị quantity trong giỏ hàng =0 rồi gửi elen request là nó tự xóa
         order.setOrderDetails(orderDetails);
         order.setTotalMoney(totalMoney);
         orderRepository.save(order);
@@ -83,8 +94,9 @@ public class OrderServiceImpl implements OrderService {
         return orderList.stream().map(OrderResponse::convert).collect(Collectors.toList());
     }
 
-    public OrderResponse informationCart(Long orderId){
-        Order order = orderRepository.findById(orderId).orElseThrow(()->new NotFoundException("Order not found"));
+    public OrderResponse informationOrder(Long orderId){
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(()->new NotFoundException("Order not found"));
         return OrderResponse.convert(order);
     }
     public void updateOrderStatus(Long orderId,OrderStatus newStatus) {
@@ -101,9 +113,17 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
     }
     //lấy ra các thông tin đơn hàng chuẩn nhất
-    public List<OrderResponse> orderRecent(int page,int size){
-        Pageable pageable= PageRequest.of(page-1,size);
+    public PageResponse<List<OrderResponse>> orderRecent(int page, int size){
+        Sort sort=Sort.by(Sort.Direction.DESC,"createdAt");
+        Pageable pageable= PageRequest.of(page-1,size,sort);
         Page<Order> orderList=orderRepository.findAll(pageable);
-        return orderList.stream().map(OrderResponse::convert).collect(Collectors.toList());
+        List<OrderResponse> responseList= orderList.stream().map(OrderResponse::convert).toList();
+        return PageResponse.<List<OrderResponse>>builder()
+                .pageNo(page)
+                .pageSize(size)
+                .totalPages(orderList.getTotalPages())
+                .totalElements(orderList.getTotalElements())
+                .items(responseList)
+                .build();
     }
 }

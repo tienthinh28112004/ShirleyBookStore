@@ -17,6 +17,5 @@ public class ChapterCreateRequest {
     @NotBlank(message = "Content Chapter cannot be null")
     private String content;
 
-    @NotBlank(message = "bookId cannot be null")
     private Long bookId;
 }

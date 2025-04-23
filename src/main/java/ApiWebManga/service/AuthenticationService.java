@@ -1,9 +1,11 @@
 package ApiWebManga.service;
 
 import ApiWebManga.Entity.User;
+import ApiWebManga.dto.Request.IntrospectRequest;
 import ApiWebManga.dto.Request.LoginRequest;
 import ApiWebManga.dto.Request.LogoutRequest;
 import ApiWebManga.dto.Request.UserCreationRequest;
+import ApiWebManga.dto.Response.IntrospectResponse;
 import ApiWebManga.dto.Response.RefreshTokenResponse;
 import ApiWebManga.dto.Response.SignInResponse;
 import com.nimbusds.jose.JOSEException;
@@ -18,4 +20,6 @@ public interface AuthenticationService {
     void logOut(LogoutRequest request,HttpServletResponse response) throws ParseException, JOSEException;
     RefreshTokenResponse refreshToken(@CookieValue(name = "refreshToken") String refreshToken) throws ParseException, JOSEException;
     String verifyEmail(String token);
+    IntrospectResponse introspect(IntrospectRequest request);
+    SignInResponse loginWithGoogle(String code,HttpServletResponse response);
 }

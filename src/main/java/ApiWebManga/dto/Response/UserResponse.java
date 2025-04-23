@@ -6,6 +6,9 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,19 +18,29 @@ import java.time.LocalDate;
 public class UserResponse {
     private Long id;
     private String fullName;
-    private int facebookAccountId;
-    private int googleAccountId;
+    private String avatarUrl;
     private String email;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthday;
+    private CartTotalResponse cart;
+    private boolean isActive;
+    private String phoneNumber;
+    private LocalDateTime createdAt;
+    private List<String> role;
     public static UserResponse convert(User user) {
+        List<String> role=new ArrayList<>();
+        user.getUserHasRoles().stream().map(userHasRoles -> userHasRoles.getRole().getName()).forEach(role::add);
         return UserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
-                .facebookAccountId(user.getFacebookAccountId())
-                .googleAccountId(user.getGoogleAccountId())
                 .email(user.getEmail())
+                .isActive(user.isActive())
                 .birthday(user.getBirthday())
+                .avatarUrl(user.getAvatarUrl())
+                .cart(CartTotalResponse.convert(user.getCart()))
+                .createdAt(user.getCreatedAt())
+                .phoneNumber(user.getPhoneNumber())
+                .role(role)
                 .build();
     }
 }

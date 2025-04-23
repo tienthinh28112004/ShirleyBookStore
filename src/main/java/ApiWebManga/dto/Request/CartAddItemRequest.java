@@ -2,11 +2,12 @@ package ApiWebManga.dto.Request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CartAddItemRequest {
 
     @NotNull(message = "BookId cannot be null")

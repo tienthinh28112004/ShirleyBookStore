@@ -27,7 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,31 +73,20 @@ public class BookServiceImpl implements BookService {
                 .isbn(request.getIsbn())
                 .description(request.getDescription())
                 .price(request.getPrice())
-                .language(request.getLanguage())
                 .thumbnail(thumbnailUrl)
                 .bookPath(bookPath)
                 .author(user)
                 .publisher(email)
                 .build();
         List<BookHasCategory> bookHasCategories = new ArrayList<>();
-        for (int i = 0; i < request.getCategories().size(); i++) {
-            String[] arr=request.getCategories().get(i).toUpperCase().split("\\s+");
-            StringJoiner joiner=new StringJoiner(" ");
-            for(String x:arr){
-                joiner.add(x);
-            }
-            String name=joiner.toString().trim();
-            if (categoryRepository.existsByName(name)) {
-                log.info(name);
-                Category category = categoryRepository.findByName(name)
-                        .orElseThrow(()->new NotFoundException("Category not found"));
-                BookHasCategory bookHasCategory = BookHasCategory.builder()
-                        .category(category)
-                        .book(book)
-                        .build();
-                bookHasCategories.add(bookHasCategory);
-                log.info(String.valueOf(bookHasCategories.size()));
-            }
+        //request.getCategoriesId().stream().map(categoryRepository::findById).forEach(bookHasCategories.);
+        for(int i=0;i<request.getCategoriesId().size();i++){
+            Category category = categoryRepository.findById(request.getCategoriesId().get(i))
+                    .orElseThrow(()->new NotFoundException("Category not found"));
+            bookHasCategories.add(BookHasCategory.builder()
+                            .book(book)
+                            .category(category)
+                    .build());
         }
         book.setCategory(bookHasCategories);
         log.info("");
@@ -113,7 +101,7 @@ public class BookServiceImpl implements BookService {
                 .description(book.getDescription())
                 .build();
         //kafkaTemplate là một Spring Kafka helper giúp bạn gửi message đến Kafka dễ dàng.
-        kafkaTemplate.send("save-to-elastic-search",bookElasticSearch);
+        //kafkaTemplate.send("save-to-elastic-search",bookElasticSearch);đã kịp làm đâu:))
         //gửi thông báo sang kafka để lưu bookElasticSerch vào topic save-to-elastic-search,tiếp tục xử lí tại kafkaService
         //**quy trình xử lý của kafka
 
@@ -161,8 +149,8 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public PageResponse<List<BookDetailResponse>> getBoolWithSortAndMultiFieldAndSearch(int page, int size, String sortBy, String userName, String... search) {
-        return searchRepository.getBookWithSortMultiFieldAndSearch(page, size, sortBy, userName, search);
+    public PageResponse<List<BookDetailResponse>> getBoolWithSortAndMultiFieldAndSearch(int page, int size, String sortBy , String authorName, String... search) {
+        return searchRepository.getBookWithSortMultiFieldAndSearch(page, size, sortBy, authorName, search);
     }
 
     @Override
@@ -175,10 +163,8 @@ public class BookServiceImpl implements BookService {
         ArrayList<Predicate> predicateList = new ArrayList<>();
         if(StringUtils.hasLength(keyword)){
             Predicate toTitle = criteriaBuilder.like(root.get("title"),"%"+keyword+"%");
-            Predicate toLanguage = criteriaBuilder.like(root.get("language"),"%"+keyword+"%");
             Predicate toPrice = criteriaBuilder.like(root.get("description"),"%"+keyword+"%");
             predicateList.add(toTitle);
-            predicateList.add(toLanguage);
             predicateList.add(toPrice);
 
             //kết nối với nhau thông qua biến author
@@ -230,10 +216,8 @@ public class BookServiceImpl implements BookService {
         ArrayList<Predicate> predicateList = new ArrayList<>();
         if(StringUtils.hasLength(keyword)){
             Predicate toTitle = criteriaBuilder.like(root.get("title"),"%"+keyword+"%");
-            Predicate toLanguage = criteriaBuilder.like(root.get("language"),"%"+keyword+"%");
             Predicate toPrice = criteriaBuilder.like(root.get("description"),"%"+keyword+"%");
             predicateList.add(toTitle);
-            predicateList.add(toLanguage);
             predicateList.add(toPrice);
 
             Join<Book,User> userJoin = root.join("author",JoinType.LEFT);//sử dụng left để kể cả khi không có author trùng thì ta vẫn lấy được các giá trị của book

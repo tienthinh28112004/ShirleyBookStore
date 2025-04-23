@@ -21,6 +21,4 @@ public class UserUpdateRequest {
     @DobValidator(min= 12)//lớn hơn 12 tuổi mới được vào
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate dob;
-
-    String avatarUrl;
 }

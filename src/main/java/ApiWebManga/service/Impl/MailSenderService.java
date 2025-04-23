@@ -1,7 +1,6 @@
 package ApiWebManga.service.Impl;
 
 import ApiWebManga.Entity.User;
-import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.repository.UserRepository;
 import ApiWebManga.service.EmailVerificationTokenService;
 import jakarta.mail.MessagingException;
@@ -13,10 +12,6 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
-
-
-import java.util.Random;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -34,20 +29,20 @@ public class MailSenderService {
 
     public void sendEmailUser(User user) throws MessagingException, MailException {//bắt lối gửi mail
         try{
-            String frontEndUrl = "http://localhost:3000";//email này phải c dạng trùng với erify email trong authenticate để nso có thể chạy đến và xác thực
-            String url = String.format("%s/auth/email-verification/%s",frontEndUrl,
-                    user.getEmailVerificationToken().getToken());
+            String otp = user.getEmailVerificationToken().getToken(); // Lấy mã OTP từ token
 
             // Tạo nội dung HTML trực tiếp
             String htmlContent = "<!DOCTYPE html>" +
                     "<html>" +
                     "<head><meta charset=\"UTF-8\"/><title>Email Verification</title></head>" +
-                    "<body>" +
-                    "<h1>Welcome, " + user.getFullName() + "!</h1>" +
-                    "<p>Please click the link below to verify your email:</p>" +
-                    "<a href=\"" + url + "\">Verify Email</a>" +
-                    "<p>Or return to our website:</p>" +
-                    "<a href=\"" + frontEndUrl + "\">Back to " + webName + "</a>" +
+                    "<body style=\"font-family: Arial, sans-serif; text-align: center;\">" +
+                    "<h2 style=\"color: #333;\">Xác minh tài khoản của bạn</h2>" +
+                    "<p>Cảm ơn bạn đã đăng ký! Dưới đây là mã xác minh (OTP) của bạn:</p>" +
+                    "<h3 style=\"font-size: 24px; color: #007bff;\">" + otp + "</h3>" +
+                    "<p>Vui lòng nhập mã này trên trang web của chúng tôi để hoàn tất xác minh.</p>" +
+                    "<p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.</p>" +
+                    "<hr style=\"margin: 20px 0;\">" +
+                    "<p style=\"font-size: 12px; color: #666;\">© 2024 " + webName + ". Mọi quyền được bảo lưu.</p>" +
                     "</body>" +
                     "</html>";
             MimeMessage message=javaMailSender.createMimeMessage();//tạo đối tượng MIME giúp hỗ trợ các ngôn ng văn bản tệp đính kèm

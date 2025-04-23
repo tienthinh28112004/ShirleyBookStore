@@ -5,7 +5,6 @@ import ApiWebManga.Entity.User;
 import ApiWebManga.Entity.UserHasRoles;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.Exception.TokenExpiredException;
-import ApiWebManga.repository.InvalidateTokenRepository;
 import ApiWebManga.repository.UserRepository;
 import ApiWebManga.service.JwtService;
 import ApiWebManga.service.RedisService;
@@ -18,15 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
-import java.util.Date;
-import java.util.Objects;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -34,19 +29,16 @@ import java.util.UUID;
 public class JwtServiceImpl implements JwtService {
     private final UserRepository userRepository;
 
-    private final InvalidateTokenRepository invalidateTokenRepository;
-
-    private final PasswordEncoder passwordEncoder;
-
     private final RedisService redisService;
     @Value("${app.secret}")
     private String appSecret;
 
     @Value("${app.jwt.token.expires-in}")
-    private String tokenExpiresIn;
+    private Long tokenExpiresIn;
 
     @Value("${app.jwt.refresh-token.expires-in}")
-    private String refreshTokenExpiresIn;
+    private Long refreshTokenExpiresIn;
+
     public String generateAccessToken(User user){//sử dụng thư viện JOSE để tạo token
         JWSHeader header=new JWSHeader(JWSAlgorithm.HS512);
         if (user.getId() == null) {
@@ -56,7 +48,7 @@ public class JwtServiceImpl implements JwtService {
                 .subject(user.getEmail())//
                 .issuer("TienThinh")//
                 .issueTime(new Date())
-                .expirationTime(new Date(new Date().getTime() + Long.parseLong(tokenExpiresIn)))//
+                .expirationTime(new Date(new Date().getTime() + tokenExpiresIn))//
                 .jwtID(UUID.randomUUID().toString()) //theo devteria thì nên dùng và lưu trong csdl
                 .claim("Authority",buildAuthority(user))
                 .build();
@@ -82,7 +74,7 @@ public class JwtServiceImpl implements JwtService {
                 .subject(user.getEmail())//
                 .issuer("TienThinh")//
                 .issueTime(new Date())
-                .expirationTime(new Date(new Date().getTime() + Long.parseLong(refreshTokenExpiresIn)))//
+                .expirationTime(new Date(new Date().getTime() + refreshTokenExpiresIn))//
                 .build();
 
         Payload payload=new Payload(jwtClaimsSet.toJSONObject());
@@ -170,10 +162,11 @@ public class JwtServiceImpl implements JwtService {
         }
     }
 
-    private String buildAuthority(User user){
-        StringJoiner roles=new StringJoiner(" ");
+    private List<String> buildAuthority(User user){
+//        StringJoiner roles=new StringJoiner(" ");
+        ArrayList<String> roles=new ArrayList<>();
         user.getUserHasRoles().stream().map(UserHasRoles::getRole).map(Roles::getName).forEach(roles::add);
-        return roles.toString();//trả ra dạng "ADMIN USER "
+        return roles;//trả ra dạng "[ADMIN,USER] "
     }
 
 //    private String buildPermission(User user){

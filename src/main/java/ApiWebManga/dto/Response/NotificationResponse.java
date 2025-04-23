@@ -14,13 +14,29 @@ import java.time.LocalDateTime;
 public class NotificationResponse {
     private Long id;
 
-    private Long userId;
-
-    private Long bookId;//trả về bookId cũng được,gán nó vào thẻ link nếu người dùng abams vào thì sẽ link sang truyện
+    private String title;
 
     private String message;
 
-    private String elapsedTime;//thời gian trôi qua
+    private Boolean isRead;
+
+    private String url;
+
+    private String avatarUrl;
+
+    private String elapsed;
+
+    public static NotificationResponse convert(Notification notification){
+        return NotificationResponse.builder()
+                .id(notification.getId())
+                .title(notification.getTitle())
+                .message(notification.getMessage())
+                .isRead(notification.getIsRead())
+                .url(notification.getUrl())
+                .avatarUrl(notification.getAvatarUrl())
+                .elapsed(getTimeElapsed(notification.getCreatedAt()))
+                .build();
+    }
 
     public static String getTimeElapsed(LocalDateTime createDate){
         if(createDate == null){
@@ -36,13 +52,5 @@ public class NotificationResponse {
         }else{
             return (duration.toDays() / 30) +" tháng trước";
         }
-    }
-    public static NotificationResponse convert(Notification notification){
-        return NotificationResponse.builder()
-                .id(notification.getId())
-                .bookId(notification.getBookId())
-                .userId(notification.getUserId())
-                .elapsedTime(getTimeElapsed(notification.getCreateAt()))
-                .build();
     }
 }

@@ -1,5 +1,6 @@
 package ApiWebManga.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,13 +10,14 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "bookHasCategory")
+@Table(name = "books_has_categories")
 public class BookHasCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
+    @JsonBackReference // Thêm annotation này
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 

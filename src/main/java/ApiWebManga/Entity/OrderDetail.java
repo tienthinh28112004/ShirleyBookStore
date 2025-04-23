@@ -22,10 +22,6 @@ public class OrderDetail extends AbstractEntity<Long>{
     @Column(name="quantity",nullable = false)
     private Long quantity;
 
-    @Column(name="price",nullable = false)
-    private Long price;
-
     @Column(name="total_money",nullable = false)
     private Long totalMoneyBook;//book.price * quantity(tổng tiền của sách ấy nhân với số luọng
-
 }

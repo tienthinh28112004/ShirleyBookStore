@@ -19,19 +19,19 @@ public abstract class AbstractEntity<T> {
     T id;
 
     @Column(name ="created_at")
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
     @Column(name="updated_at")
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 
     @PrePersist//anotation này giúp tự động cập nhật
     protected void onCreate(){
-        createAt =LocalDateTime.now();
-        updateAt =LocalDateTime.now();
+        createdAt =LocalDateTime.now();
+        updatedAt =LocalDateTime.now();
     }
 
     @PreUpdate//anotation này giúp tự động cập nhật mỗi khi có thay đổi
     protected void onUpdate(){
-        updateAt =LocalDateTime.now();
+        updatedAt =LocalDateTime.now();
     }
 }

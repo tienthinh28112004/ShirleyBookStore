@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "Categories")
+@Table(name = "categories")
 public class Category {//hên xui nếu cần có thể xóa
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

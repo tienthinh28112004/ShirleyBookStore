@@ -1,10 +1,11 @@
 package ApiWebManga.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity(name = "UserHasRole")
-@Table(name = "user_has_role")
+@Table(name = "users_has_roles")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -18,6 +19,7 @@ public class UserHasRoles {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference
     private User user;
 
     @ManyToOne

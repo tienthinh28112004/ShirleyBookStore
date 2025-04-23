@@ -2,6 +2,7 @@ package ApiWebManga.Entity;
 
 import ApiWebManga.Enums.OrderStatus;
 import ApiWebManga.Enums.PaymentExpression;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,8 +43,9 @@ public class Order extends AbstractEntity<Long>{
     @JoinColumn(name="total_money",nullable = false)
     private long totalMoney;//tổng tiền của tất cả ddiown hàng
 
-    @OneToOne
-    @JoinColumn(name="user_id",nullable = false)
+    @ManyToOne
+    @JoinColumn(name="user_id", nullable = false)
+    @JsonBackReference  // Thêm annotation này để tránh lặp vô hạn khi serialize(cho vào phòng hờ thôi về chủ yếu mình đưa ra userResponse)
     private User user;
 
     @OneToMany(mappedBy = "order",cascade = CascadeType.ALL,orphanRemoval = true)//nếu có thay đổi nó sẽ tự động câập nhật trong csdl và trong cả orderdetail

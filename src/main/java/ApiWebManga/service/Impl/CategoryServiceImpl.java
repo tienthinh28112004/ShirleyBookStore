@@ -22,6 +22,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .build();
+        log.info("Lưu truyện thành công");
+        log.info("category {}",category.getName());
         return categoryRepository.save(category);
     }
 
@@ -35,10 +37,10 @@ public class CategoryServiceImpl implements CategoryService {
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
     }
+
     @Override
     @Transactional
-    public Void deleteCategory(Long categoryId) {
+    public void deleteCategory(Long categoryId) {
         categoryRepository.deleteById(categoryId);
-        return null;
     }
 }

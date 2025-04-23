@@ -1,7 +1,7 @@
 package ApiWebManga.service.Impl;
 
 import ApiWebManga.Entity.*;
-import ApiWebManga.Enums.Role;
+import ApiWebManga.Exception.BadCredentialException;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.Utils.SecurityUtils;
 import ApiWebManga.dto.Request.UserCreationRequest;
@@ -9,6 +9,7 @@ import ApiWebManga.dto.Request.UserUpdateRequest;
 import ApiWebManga.dto.Response.PageResponse;
 import ApiWebManga.dto.Response.UserResponse;
 import ApiWebManga.repository.RolesRepository;
+import ApiWebManga.repository.SearchRepository;
 import ApiWebManga.repository.UserRepository;
 import ApiWebManga.service.EmailVerificationTokenService;
 import ApiWebManga.service.UserService;
@@ -22,6 +23,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,100 +32,81 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static ApiWebManga.Enums.Role.*;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceImpl implements UserService {
+    public final  CloudinaryService cloudinaryService;
     private final RolesRepository rolesRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final MailSenderService mailSenderService;
-    @Override
-    public PageResponse<?> advanceSearchWithCriteria(int pageNo, int pageSize, String sortBy, String... search) {
-        return null;
-    }
+    private final SearchRepository searchRepository;
 
     @Override
-    public PageResponse<?> getAllUsersWithSortByMultipleColumns(int pageNo, int pageSize, String... sorts) {
-        int page=0;
-        if(pageNo>0){
-            page=pageNo-1;
-        }
+    public PageResponse<List<UserResponse>> getAllUsersWithSortByMultipleColumns(int pageNo, int pageSize,String keyword, String sorts) {
         //sort
         List<Sort.Order> orders=new ArrayList<>();
-        if(sorts.length>0){
-            for(String sort : sorts){
-                Pattern pattern=Pattern.compile("(\\w+?)(:)(.*)");
-                Matcher matcher=pattern.matcher(sort);
-                if(matcher.find()){
-                    if(matcher.group(3).equalsIgnoreCase("asc")){
-                        orders.add(new Sort.Order(Sort.Direction.ASC, matcher.group(1)));
-                    }else{
-                        orders.add(new Sort.Order(Sort.Direction.DESC, matcher.group(1)));
-                    }
+
+        log.info("page:{},size{},keyword:{}",pageNo,pageSize,keyword);
+        if(sorts!=null) {
+            log.info("vào đến đấy?");
+            Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
+            Matcher matcher = pattern.matcher(sorts);
+            if (matcher.find()) {
+                if (matcher.group(3).equalsIgnoreCase("asc")) {
+                    orders.add(new Sort.Order(Sort.Direction.ASC, matcher.group(1)));
+                } else {
+                    orders.add(new Sort.Order(Sort.Direction.DESC, matcher.group(1)));
                 }
             }
         }
+
         //Paging
-        Pageable pageable=PageRequest.of(page,pageSize,Sort.by(orders));
-
-        Page<User> userPage =userRepository.findAllActiveUsers(pageable);
-
+        Pageable pageable=PageRequest.of(pageNo-1,pageSize,Sort.by(orders));
+        Page<User> userPage=null;
+        if(StringUtils.hasLength(keyword)&&keyword!=null){
+            userPage =userRepository.findAllByKeyword(pageable,keyword);
+        }else{
+            userPage = userRepository.findAll(pageable);
+        }
         List<UserResponse> userList=userPage.stream().map(UserResponse::convert).toList();
-        return PageResponse.builder()
+        return PageResponse.<List<UserResponse>>builder()
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .totalPages(userPage.getTotalPages())
                 .items(userList)
-                .build();
-    }
-
-    @Override
-    public PageResponse<?> getAllUsersWithSortBy(int pageNo,int pageSize,String sortBy) {
-        //Xu ly truong hop page muon bat dau tai 1
-        int page =0;
-        if(pageNo > 0){
-            page=pageNo-1;
-        }
-        //Sorting
-        Sort.Order order=new Sort.Order(Sort.Direction.ASC,"id");//mặc đinh sắp xếp tăng dần theo id
-        if(StringUtils.hasLength(sortBy)){
-            Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");// tencot:asc|desc
-            Matcher matcher=pattern.matcher(sortBy);
-            if(matcher.find()){
-                String columnName = matcher.group(1);
-                if(matcher.group(3).equalsIgnoreCase("asc")){
-                    order=new Sort.Order(Sort.Direction.ASC,columnName);
-                }else{
-                    order=new Sort.Order(Sort.Direction.DESC,columnName);
-                }
-            }
-        }
-
-        //Paging
-        Pageable pageable= PageRequest.of(page,pageSize,Sort.by(order));
-
-        Page<User> usersPage =userRepository.findAllActiveUsers(pageable);
-
-        List<UserResponse> userList = usersPage.stream().map(UserResponse::convert).toList();//chuyển hết sang userresponse
-
-        return PageResponse.builder()
-                .pageNo(pageNo)
-                .pageSize(pageSize)
-                .totalPages(usersPage.getTotalPages())
-                .items(userList)
+                .totalElements(userList.size())
                 .build();
     }
 
     @Override
     public User createUser(UserCreationRequest request) {
         log.info("vào đến đây rồi");
-        if(userRepository.existsByEmail(request.getEmail())){
-            throw new BadCredentialsException("user đã tồn tại.1111");
+
+        User existingUser=userRepository.findByEmail(request.getEmail()).orElse(null);
+
+        if(existingUser !=null){//nếu User đã tồn tại
+            if(existingUser.getEmailVerifiedAt() != null){
+                throw new BadCredentialsException("Email đã được đăng kí rồi");
+            }else{
+                try {
+                    existingUser.setFullName(request.getFullName());
+                    existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+                    //nếu user tồn tại nhwung chưa được xác thực,gwuir lại OTP
+                    existingUser.setEmailVerificationToken(emailVerificationTokenService.create(existingUser));
+                    mailSenderService.sendEmailUser(existingUser);
+                    return existingUser;
+                } catch (Exception e){
+                    throw new BadCredentialsException("Gửi Email thất bại vui lòng thử lại");
+                }
+            }
         }
 
-        Roles role =rolesRepository.findByName(String.valueOf(Role.USER))
+        Roles role =rolesRepository.findByName(String.valueOf(USER))
                 .orElseThrow(()-> new NotFoundException("role nay khong ton tai@@@"));
 
 
@@ -131,9 +114,7 @@ public class UserServiceImpl implements UserService {
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .isActive(true)
-                .facebookAccountId(request.getFacebookAccountId())
-                .googleAccountId(request.getGoogleAccountId())
+                .isActive(false)//chỉ kích hoạt khi user xác thực email
                 .avatarUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSp3ztVtyMtzjiT_yIthons_zqTQ_TNZm4PS0LxFyFO0ozfM2S87W8QoL4&s")
                 //avatar mặc định như facebook
                 .build();
@@ -171,10 +152,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User update(Long userId,UserUpdateRequest request) {
+    public User update(Long userId, UserUpdateRequest request, MultipartFile avatarPdf) {
         User user = findById(userId);
-
-        user.setId(userId);
         //boolean isRequiredEmailVerification = false;
 
         if (StringUtils.hasText(String.valueOf(request.getDob())) && !request.getDob().equals(user.getBirthday())) {
@@ -185,9 +164,15 @@ public class UserServiceImpl implements UserService {
             user.setPhoneNumber(request.getPhoneNumber());
         }
 
-        if (StringUtils.hasText(request.getAvatarUrl()) && !request.getAvatarUrl().equals(user.getAvatarUrl())) {//kiểm tra rỗng
-            user.setAvatarUrl(request.getAvatarUrl());
+        log.info("avatarPdf {}",avatarPdf);
+        if(avatarPdf!=null){
+            String avatarUrl=cloudinaryService.uploadImage(avatarPdf);
+            log.info("avatarUrl {}",avatarUrl);
+            if (StringUtils.hasText(avatarUrl) && !avatarUrl.equals(user.getAvatarUrl())) {//kiểm tra rỗng
+                user.setAvatarUrl(avatarUrl);
+            }
         }
+
        // user.setRoles(request.getRoles());
 //        if (isRequiredEmailVerification) {
 //            emailVerificationEventPublisher(user);
@@ -201,16 +186,22 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    @Override
+    public void banUser(Long userId) {
+        User user=userRepository.findById(userId)
+                .orElseThrow(()->new NotFoundException("User Not found"));
+        user.setActive(false);
+        userRepository.save(user);
+    }
 
     @Override
-    public void delete(Long userId) {
-        userRepository.deleteById(userId);
-        // Get user by id
-//        User user = findById(userId);
-//        user.setActive(false);
-//
-//        userRepository.save(user);
+    public void unBanUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(()->new NotFoundException("User not found"));
+        user.setActive(true);
+        userRepository.save(user);
     }
+
 
     @Override
     public User getMyInfo() {
@@ -220,5 +211,20 @@ public class UserServiceImpl implements UserService {
         User user=userRepository.findByEmail(email)
                 .orElseThrow(()->new NotFoundException("User not found"));
         return user;
+    }
+
+    @Override
+    public void updateRoleAuthor(long userId) {
+        User user=userRepository.findById(userId)
+                .orElseThrow(()->new NotFoundException("User not found"));
+        Roles roles= rolesRepository.findByName(AUTHOR.name())
+                .orElseThrow(()->new  BadCredentialException("Không tồn tại role này"));
+
+        UserHasRoles userHasRoles=UserHasRoles.builder()
+                .user(user)
+                .role(roles)
+                .build();
+        user.getUserHasRoles().add(userHasRoles);
+        userRepository.save(user);
     }
 }

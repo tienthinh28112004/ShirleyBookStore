@@ -1,12 +1,13 @@
 package ApiWebManga.service;
 
 import ApiWebManga.dto.Request.CartAddItemRequest;
-import ApiWebManga.dto.Response.CartInformationResponse;
+import ApiWebManga.dto.Response.CartTotalResponse;
 
 public interface CartService {
     //CartInformationResponse createDefaultCart();
-    CartInformationResponse addItemCart(CartAddItemRequest request);
-    Void deleteItemCart(Long bookId);
-    CartInformationResponse informationCart();
+    CartTotalResponse addOrUpdateItemCart(CartAddItemRequest request);
+    void deleteItemCart(Long bookId);
+    void clearAllItemCart();
+    CartTotalResponse informationCart();
 
 }

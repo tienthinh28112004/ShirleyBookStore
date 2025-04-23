@@ -8,7 +8,7 @@ import ApiWebManga.service.BookService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,11 +17,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @Slf4j
-@RequestMapping("/book")
+@RequestMapping("/books")
 public class BookController {
     private final BookService bookService;
 
-    @PostAuthorize("ADMIN")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('AUTHOR')")
     @Operation(summary = "upload book", description = "upload book with bookCreationRequest,thumbnail,bookPdf")
     @PostMapping(value = "/upload-books")
     public ApiResponse<?> uploadBook(@RequestPart(name = "request") BookCreationRequest request,//json
@@ -34,7 +34,7 @@ public class BookController {
                 .result(bookService.uploadBook(request,thumbnail,bookPdf))
                 .build();
     }
-    @PostAuthorize("USER")
+
     @Operation(summary = "getBookById", description = "information book by id")
     @GetMapping("/getBook/{id}")
     public ApiResponse<?> getBookById(@PathVariable Long id) {
@@ -44,9 +44,9 @@ public class BookController {
                 .build();
     }
     //có sự khác bieetj giữa ấy ra danh sách user và lấy ra danh sách sách
-    @PostAuthorize("USER")
+//    @PreAuthorize("hasAuthority('USER')")
     @Operation(summary = "listBook", description = "information list book wiht page,size")
-    @GetMapping("/booklist")
+    @GetMapping("/bookList")
     public ApiResponse<?> getAll(@RequestParam(required = false,defaultValue = "1") int page,
                                  @RequestParam(required = false,defaultValue = "10") int size
     ) {
@@ -56,26 +56,25 @@ public class BookController {
                 .build();
     }
 
-    @PostAuthorize("USER")
     @Operation(summary = "listBook by criteria", description = "information list book search,sort by criteria ")
-    @GetMapping("/book-search-criteria")
+    @GetMapping("/book-search-criteria")//
     public ApiResponse<?> getAllBookSearchCriteria(
             @RequestParam(required = false,defaultValue = "1") int page,
             @RequestParam(required = false,defaultValue = "10") int size,
-            @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) String user,
-            @RequestParam(required = false) String... search
+            @RequestParam(required = false) String sortBy,//sắp xếp theo tăng giảm
+            @RequestParam(required = false) String authorName,//tìm kiếm theo email,username của tác giả
+            @RequestParam(required = false) String... search//sắp xếp tìm kiếm các tờng
     ) {
         return ApiResponse.<PageResponse<List<BookDetailResponse>>>builder()
                 .message("list book search criteria")
-                .result(bookService.getBoolWithSortAndMultiFieldAndSearch(page, size, sortBy, user, search))
+                .result(bookService.getBoolWithSortAndMultiFieldAndSearch(page, size, sortBy, authorName, search))
                 .build();
     }
 
-    @PostAuthorize("USER")
+    //@PostAuthorize("USER")
     @Operation(summary = "search by keyword", description = "information list book search criteria ")
     @GetMapping("/book-search-keyword")
-    public ApiResponse<?> getAllBookSearchCriteria(
+    public ApiResponse<?> getAllBookSearchKeyword(
             @RequestParam(required = false,defaultValue = "1") int page,
             @RequestParam(required = false,defaultValue = "10") int size,
             @RequestParam(required = false) String keyword

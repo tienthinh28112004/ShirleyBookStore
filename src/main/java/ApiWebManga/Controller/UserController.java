@@ -1,23 +1,20 @@
 package ApiWebManga.Controller;
 
-import ApiWebManga.Entity.User;
 import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.UserCreationRequest;
 import ApiWebManga.dto.Request.UserUpdateRequest;
 import ApiWebManga.dto.Response.PageResponse;
 import ApiWebManga.dto.Response.UserResponse;
-import ApiWebManga.service.EmailVerificationTokenService;
-import ApiWebManga.service.Impl.MailSenderService;
 import ApiWebManga.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,47 +26,22 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
-    @PostAuthorize("ADMIN")
-    @Operation(summary = "Get list of users per pageNo", description = "Send a request via this API to get user list by pageNo and pageSize")
-    @GetMapping("/list")
-    public ApiResponse<?> getAllUsers(@RequestParam(defaultValue = "0", required = false) int pageNo,
-                                       @RequestParam(defaultValue = "20", required = false) int pageSize,
-                                       @RequestParam(required = false) String sortBy) {
-        log.info("Request get all of users");
-        return ApiResponse.<PageResponse>builder()
-                .message("list users")
-                .result(userService.getAllUsersWithSortBy(pageNo, pageSize, sortBy))
-                .build();
-    }
-    @PostAuthorize("ADMIN")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @Operation(summary = "Get list of users with sort by multiple columns", description = "Send a request via this API to get user list by pageNo, pageSize and sort by multiple column")
     @GetMapping("/list-with-sort-by-multiple-columns")
-    public ApiResponse<?> getAllUsersWithSortByMultipleColumns(@RequestParam(defaultValue = "0", required = false) int pageNo,
-                                                                @RequestParam(defaultValue = "20", required = false) int pageSize,
-                                                                @RequestParam(required = false) String... sorts) {
+    public ApiResponse<PageResponse<List<UserResponse>>> getAllUsersWithSortByMultipleColumns(
+            @RequestParam(defaultValue = "1", required = false) int page,
+            @RequestParam(defaultValue = "10", required = false) int size,
+           @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sorts) {
         log.info("Request get all of users with sort by multiple columns");
-        return ApiResponse.<PageResponse>builder()
+        return ApiResponse.<PageResponse<List<UserResponse>>>builder()
                 .message("list users")
-                .result(userService.getAllUsersWithSortByMultipleColumns(pageNo, pageSize, sorts))
+                .result(userService.getAllUsersWithSortByMultipleColumns(page, size,keyword, sorts))
                 .build();
     }
 
-    @PostAuthorize("ADMIN")
-    @Operation(summary = "Advance search query by criteria", description = "Send a request via this API to get user list by pageNo, pageSize and sort by multiple column")
-    @GetMapping("/advance-search-with-criteria")//chưa làm
-    public ApiResponse<?> advanceSearchWithCriteria(@RequestParam(defaultValue = "0", required = false) int pageNo,
-                                                     @RequestParam(defaultValue = "20", required = false) int pageSize,
-                                                     @RequestParam(required = false) String sortBy,
-                                                     @RequestParam(defaultValue = "") String... search) {
-        log.info("Request advance search query by criteria");
-        return ApiResponse.<PageResponse>builder()
-                .message("list users")
-                .result(userService.advanceSearchWithCriteria(pageNo, pageSize, sortBy, search))
-                .build();
-    }
-
-    @PostAuthorize("ADMIN")
-    @PostMapping("/add")
+    @PostMapping("/addUser")//để chờ register gọi đến
     @Operation(summary = "Create user endpoint")
     public ApiResponse<UserResponse> createUser(
             @Parameter(description = "Request body to user create", required = true)
@@ -81,7 +53,7 @@ public class UserController {
                 .build();
     }
 
-    //@PostAuthorize("#email == authentication.token.claims['sub'] or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/{userId}")
     @Operation(summary = "Show user endpoint")
     public ApiResponse<UserResponse> getUser(
@@ -93,39 +65,64 @@ public class UserController {
                 .build();
     }
 
-    @PostAuthorize("#email == authentication.token.claims['sub'] or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/update/{userId}")
     @Operation(summary = "Update user endpoint")
     public ApiResponse<UserResponse> updateUser(
             @Parameter(description = "userID", required = true)
             @PathVariable("userId") Long userId,
             @Parameter(description = "Request body to user update", required = true)
-            @RequestBody @Valid UserUpdateRequest request) {
+            @RequestPart @Valid UserUpdateRequest request,//không thể gửi cùng lúc requestPart vs requestBody được nên ở đây ta phải gửi theo part rồi convert sang application/json
+            @RequestPart(name = "avatarPdf", required = false) MultipartFile avatarPdf) {
         return ApiResponse.<UserResponse>builder()
                 .message("update User")
-                .result(UserResponse.convert(userService.update(userId,request)))
+                .result(UserResponse.convert(userService.update(userId,request,avatarPdf)))
                 .build();
 
     }
 
-    @PostAuthorize("#email == authentication.token.claims['sub'] or hasRole('ADMIN')")
-    @DeleteMapping("/delete/{userId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/banUser/{userId}")
     @Operation(summary = "Delete user endpoint")
-    public ApiResponse<String> deleteUser(
+    public ApiResponse<String> banUser(
             @Parameter(name = "id", description = "User ID", required = true)
             @PathVariable("userId") final Long userId){
-        userService.delete(userId);
+        userService.banUser(userId);
         return ApiResponse.<String>builder().
                 result("User has been deleted").
                 build();
     }
 
-    @PostAuthorize("#email == authentication.token.claims['sub'] or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/unBanUser/{userId}")
+    @Operation(summary = "Delete user endpoint")
+    public ApiResponse<String> unBanUser(
+            @Parameter(name = "id", description = "User ID", required = true)
+            @PathVariable("userId") final Long userId){
+        userService.unBanUser(userId);
+        return ApiResponse.<String>builder().
+                result("User has been deleted").
+                build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping (value = "/myInfo")
-    @Operation(summary = "user authencated")
+    @Operation(summary = "user authenticated")
     public ApiResponse<UserResponse> getMyInfo () {
         return ApiResponse.<UserResponse>builder()
                 .result(UserResponse.convert(userService.getMyInfo()))
                 .build();
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/updateRoleAuthor/{userId}")
+    @Operation(summary = "Upload Role")
+    public ApiResponse<Void> updateRoleAuthor(
+            @Parameter(name = "id", description = "User ID", required = true)
+            @PathVariable("userId") Long userId){
+        userService.updateRoleAuthor(userId);
+        return ApiResponse.<Void>builder().
+                message("Update successfully").
+                build();
     }
 }

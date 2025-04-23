@@ -2,13 +2,16 @@ package ApiWebManga.Controller;
 
 import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.CommentRequest;
+import ApiWebManga.dto.Request.CommentUpdateRequest;
 import ApiWebManga.dto.Response.CommentResponse;
+import ApiWebManga.dto.Response.CommentUpdateResponse;
+import ApiWebManga.dto.Response.PageResponse;
 import ApiWebManga.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,15 +21,20 @@ import java.util.List;
 @Slf4j
 @RequestMapping("/comment")
 public class CommentController {
-//    CommentResponse insertComment(CommentRequest request);
-//    void deleteComment(Long commentId);
-//    void updateComment(Long CommentId, CommentUpdateRequest request);
-//    List<CommentResponse> getCommentsByUserAndBook(Long userId, Long bookId);
-//    List<CommentResponse> getCommentsByBook(Long bookId);
-//    List<CommentResponse> getUserComments(Long userId);
-    //thiếu update comment nhưng sẽ làm sau:)))
+
     private final CommentService commentService;
-    @PostAuthorize("USER")
+
+    @GetMapping(value = "/getCommentsByBook/{bookId}")
+    @Operation(summary = "Comment by book")
+    public ApiResponse<PageResponse<List<CommentResponse>>> commentByBook (@PathVariable Long bookId,
+                                       @RequestParam(defaultValue = "1", required = false) int page,
+                                       @RequestParam(defaultValue = "10", required = false) int size) {
+        return ApiResponse.<PageResponse<List<CommentResponse>>>builder()
+                .message("successfully")
+                .result(commentService.getCommentsByBook(bookId,page,size))
+                .build();
+    }
+    @PreAuthorize("hasAuthority('USER')")
     @PostMapping(value = "/insertComment")
     @Operation(summary = "create comment")
     public ApiResponse<CommentResponse> insertComment (@RequestBody @Valid CommentRequest request) {
@@ -35,7 +43,8 @@ public class CommentController {
                 .result(commentService.insertComment(request))
                 .build();
     }
-    @PostAuthorize("USER")
+
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping(value = "/deleteComment/{commentId}")
     @Operation(summary = "delete comment")
     public ApiResponse<Void> deleteComment (@PathVariable Long commentId) {
@@ -44,25 +53,18 @@ public class CommentController {
                 .message("delete successfully")
                 .build();
     }
-    @PostAuthorize("ADMIN")
-    @GetMapping(value = "/getCommentsByUserAndBook/{userId}/{bookId}")
-    @Operation(summary = "comment by user and book")
-    public ApiResponse<List<CommentResponse>> commentUserAndBook (@PathVariable Long userId,@PathVariable Long bookId) {
-        return ApiResponse.<List<CommentResponse>>builder()
-                .message("successfully")
-                .result(commentService.getCommentsByUserAndBook(userId,bookId))
+
+    @PreAuthorize("isAuthenticated() or hasAuthority('ADMIN')")
+    @PutMapping(value = "/updateComment/{commentId}")
+    @Operation(summary = "update comment")
+    public ApiResponse<CommentUpdateResponse> updateComment (@PathVariable Long commentId, @RequestBody @Valid CommentUpdateRequest request) {
+        return ApiResponse.<CommentUpdateResponse>builder()
+                .message("delete successfully")
+                .result(commentService.updateComment(commentId,request))
                 .build();
     }
-    @PostAuthorize("USER")
-    @GetMapping(value = "/getCommentsByBook/{bookId}")
-    @Operation(summary = "Comment by book")
-    public ApiResponse<List<CommentResponse>> commentByBook (@PathVariable Long bookId) {
-        return ApiResponse.<List<CommentResponse>>builder()
-                .message("successfully")
-                .result(commentService.getCommentsByBook(bookId))
-                .build();
-    }
-    @PostAuthorize("ADMIN")
+
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping(value = "/getUserComments/{userId}")
     @Operation(summary = "Comment by user")
     public ApiResponse<List<CommentResponse>> commentByUser (@PathVariable Long userId) {

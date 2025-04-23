@@ -20,16 +20,12 @@ public class UserCreationRequest implements Serializable {
     @MinSizeValidator(min=1)
     String fullName;
 
-    @MinSizeValidator(min=8)
-    @CustomPasswordValidator//thông điệp để trong dob
-    String password;
-
     @NotBlank(message = "email must be not blank")
     @MinSizeValidator(min=10)
     @Email(message = "invalid email")
     String email;
 
-    private int facebookAccountId;
-
-    private int googleAccountId;
+    @MinSizeValidator(min=8)
+    @CustomPasswordValidator//thông điệp để trong dob
+    String password;
 }
