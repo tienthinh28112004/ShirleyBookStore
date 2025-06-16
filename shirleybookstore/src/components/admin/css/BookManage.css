@@ -1,0 +1,264 @@
+.book-manage {
+    padding: 20px;
+    color: #f1f1f1;
+  }
+  
+  .book-manage-title {
+    font-size: 24px;
+    color: #000;
+  }
+  
+  .book-manage-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+  
+  .book-manage-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .book-manage-search input {
+    width: 250px;
+    padding: 10px 35px 10px 15px; /* Thêm padding bên phải để chừa khoảng trống cho icon */
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    background-color: #fff;
+    color: #2c2f33;
+  }
+  /*
+  .book-manage-search .search-icon {
+    position: absolute;
+    right: 15px; /* Điều chỉnh vị trí của icon */
+    /*top: 50%;
+    transform: translateY(-50%);
+    color: #999; /* Màu sắc cho icon */
+    /*font-size: 18px; /* Kích thước icon */
+    /*pointer-events: none; /* Không cho phép click vào icon */
+  /*}*/
+  
+  
+  .book-manage-table {
+    margin-top: 15px;
+  }
+  
+  .book-manage-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .book-manage-table th,
+  .book-manage-table td {
+    padding: 15px;
+    background-color: #fff;
+    color:  #2c2f33;
+    border-bottom: 1px solid #444;
+  }
+
+  
+  .book-manage-table tr:hover {
+    background-color: #3a3d42;
+  }
+  
+  .table-icon {
+    margin-right: 8px;
+    color: #999;
+  }
+  
+  /* .switch { */
+    /* position: relative; */
+    /* display: inline-block; */
+    /* width: 60px; Tăng chiều rộng để chứa chữ */
+    /* height: 30px; Tăng chiều cao nếu cần */
+  /* } */
+  
+  .slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #f44336;
+    transition: 0.4s;
+    border-radius: 25px;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 24px; /* Điều chỉnh chiều cao */
+    width: 24px; /* Điều chỉnh chiều rộng */
+    left: 4px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .slider {
+    background-color: #4caf50;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(
+      30px
+    ); /* Điều chỉnh khoảng cách để phù hợp với chiều rộng */
+  }
+  .book-manage-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .book-manage-search {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+  
+  .book-manage-search input {
+    width: 250px;
+    padding: 8px;
+    margin-right: 8px;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+  }
+  
+    
+  .book-manage-sort {
+    position: relative;
+  }
+  .book-manage-sort select {
+    background-color:#fff ;
+    border: 1px solid #ccc;
+    width: 250px;
+    padding: 10px;
+    border-radius: 15px;
+    color:#2c2f33;
+  }
+
+  
+  
+  .book-manage-filters {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .filter-button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    color: #333;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-button.active {
+    background-color: #007bff;
+    color: #fff;
+  }
+  
+  .filter-button:hover {
+    background-color: #007bff;
+    color: #fff;
+  }
+  .pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Đảm bảo các phần tử con căn giữa theo chiều dọc */
+    margin-top: 20px;
+    padding: 10px 0;
+  }
+  
+  .custom-pagination {
+    display: flex;
+    align-items: center;
+  }
+  
+  .custom-pagination .MuiTablePagination-toolbar {
+    display: flex;
+    align-items: center;
+    background-color: transparent;
+    color: #fff;
+    padding: 0;
+  }
+  
+  .custom-pagination .MuiTablePagination-displayedRows {
+    color: #fff;
+    font-weight: bold;
+    margin-right: 10px; /* Khoảng cách giữa text và nút */
+  }
+  
+  .custom-pagination .MuiTablePagination-actions {
+    color: #fff;
+  }
+  
+  .custom-pagination .MuiButtonBase-root {
+    color: #fff;
+    border-radius: 50%;
+    margin: 0 5px;
+    transition: background-color 0.3s;
+  }
+  
+  .custom-pagination .MuiButtonBase-root:hover {
+    background-color: #5a5f65;
+  }
+   /* Switch Style for Ban/Unban */
+   .switch {
+    position: relative;
+    display: inline-block;
+    width: 80px; /* Increased width for clear text */
+    height: 34px;
+  }
+  
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #dc3545; /* Red for Ban */
+    transition: 0.4s;
+    border-radius: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #fff;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 35px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .slider {
+    background-color: #28a745; /* Green for Unban */
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(46px); /* Adjusted for new width */
+  }
+  
+  input:checked + .slider {
+    color: #fff;
+  }

@@ -1,0 +1,116 @@
+.user-detail {
+    max-width: 800px;
+    margin: auto;
+    background-color: #1f1f2e;
+    color: #f1f1f1;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    font-family: Arial, sans-serif;
+  }
+  
+  .header-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .user-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .user-basic-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .user-basic-info .user-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    color: #00bfa5; /* Màu xanh nổi bật */
+  }
+  
+  .user-basic-info p {
+    margin: 4px 0;
+    color: #ccc;
+    font-size: 14px;
+  }
+  
+  .name-and-points {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .user-points {
+    font-size: 1.2rem !important;
+    color: #ffd700 !important; /* Màu vàng nổi bật */
+    margin-left: 10px;
+    font-weight: bold !important;
+  }
+  
+  .detail-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  
+  .info-card {
+    background-color: #29293a;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+  
+  .info-card h3 {
+    font-size: 1.2rem;
+    color: #00bfa5;
+    margin-bottom: 10px;
+  }
+  
+  .info-card p {
+    color: #e1e1e1;
+    font-size: 1rem;
+  }
+  
+  .action-section {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .approve-button,
+  .reject-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .approve-button {
+    background-color: #28a745;
+  }
+  
+  .approve-button:hover {
+    background-color: #218838;
+  }
+  
+  .reject-button {
+    background-color: #dc3545;
+  }
+  
+  .reject-button:hover {
+    background-color: #c82333;
+  }

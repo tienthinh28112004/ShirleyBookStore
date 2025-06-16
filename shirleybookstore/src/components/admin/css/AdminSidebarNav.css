@@ -1,0 +1,20 @@
+/* AdminSidebarNav.css */
+.nav-link-custom {
+    text-decoration: none !important;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    padding: 8px 16px; /* Tăng khoảng cách cho các mục */
+    border-radius: 5px; /* Thêm bo tròn */
+    transition: background-color 0.3s; /* Hiệu ứng chuyển màu nền */
+  }
+  
+  .nav-link-custom:hover {
+    background-color: #2a2d3e; /* Màu nền khi di chuột vào */
+  }
+  
+  .nav-bullet {
+    font-size: 10px;
+    margin-right: 12px; /* Tăng khoảng cách giữa dấu chấm và text */
+    color: #adb5bd;
+  }

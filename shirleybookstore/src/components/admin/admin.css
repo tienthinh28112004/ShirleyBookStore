@@ -1,0 +1,52 @@
+/* admin.css */
+
+.registration-container {
+    background-color: #f8f9fa;
+  }
+  
+  .content-wrapper {
+    padding: 20px;
+  }
+  
+  .registration-title {
+    font-weight: bold;
+    font-size: 24px;
+  }
+  
+  .registration-table-container {
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .registration-table th,
+  .registration-table td {
+    vertical-align: middle;
+  }
+  
+  .registration-table .text-muted {
+    color: #6c757d !important;
+  }
+  
+  .registration-table .btn {
+    margin: 5px 0;
+  }
+  
+  .bg-primary {
+    background-color: #007bff !important;
+  }
+  
+  .p-2 {
+    padding: 0.5rem !important;
+  }
+  
+  .me-2 {
+    margin-right: 0.5rem !important;
+  }
+  
+  .text-center {
+    text-align: center !important;
+  }
+  
+  .text-danger {
+    color: #dc3545 !important;
+  }

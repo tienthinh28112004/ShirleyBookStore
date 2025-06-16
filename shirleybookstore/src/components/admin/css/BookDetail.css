@@ -1,0 +1,115 @@
+.book-detail-container {
+    max-width: 1000px; /* Giới hạn chiều rộng vừa phải */
+    margin: 40px auto;
+    padding: 30px;
+    background: #1e1e2d;
+    color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    font-family: "Arial", sans-serif;
+  }
+  
+  .book-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .book-title {
+    font-size: 36px;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .status-toggle-button {
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 18px;
+    color: #fff;
+    background-color: #d32f2f;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .status-toggle-button.enabled {
+    background-color: #388e3c;
+  }
+  
+  .status-toggle-button:hover {
+    opacity: 0.9;
+  }
+  
+  .book-detail-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+  }
+  
+  .book-thumbnail {
+    flex: 1 1 40%; /* Chiếm 40% chiều rộng */
+    text-align: center;
+    background: #252b3c;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .thumbnail-image {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .book-info-section {
+    flex: 1 1 55%; /* Chiếm 55% chiều rộng */
+    background: #252b3c;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .book-info-section h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #4caf50;
+  }
+  
+  .book-info-section p {
+    margin: 10px 0;
+    font-size: 16px;
+  }
+  
+  strong {
+    color: #ffc107;
+  }
+  
+  .author-link {
+    color: #4caf50;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
+  .author-link:hover {
+    color: #81c784;
+  }
+  
+  .book-status-section {
+    margin-top: 20px;
+    background: #252b3c;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .book-status-section h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #4caf50;
+  }
+  
+  .book-status-section p {
+    margin: 10px 0;
+    font-size: 16px;
+  }
