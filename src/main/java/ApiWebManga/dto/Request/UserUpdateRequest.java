@@ -1,6 +1,5 @@
 package ApiWebManga.dto.Request;
 
-import ApiWebManga.validator.DobValidator;
 import ApiWebManga.validator.MinSizeValidator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
@@ -18,7 +17,11 @@ public class UserUpdateRequest {
     @MinSizeValidator(min=8)
     String phoneNumber;
 
-    @DobValidator(min= 12)//lớn hơn 12 tuổi mới được vào
+    //@DobValidator(min= 12)//lớn hơn 12 tuổi mới được vào
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate dob;
+
+    String avatar;
+
+    String fullName;
 }

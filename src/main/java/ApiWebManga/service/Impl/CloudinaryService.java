@@ -1,10 +1,17 @@
 package ApiWebManga.service.Impl;
 
+import ApiWebManga.Entity.User;
+import ApiWebManga.Exception.BadCredentialException;
+import ApiWebManga.Exception.NotFoundException;
+import ApiWebManga.Utils.SecurityUtils;
+import ApiWebManga.repository.UserRepository;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -14,7 +21,9 @@ import java.io.IOException;
 @Slf4j
 public class CloudinaryService {
     private final Cloudinary cloudinary;
+    private final UserRepository userRepository;
 
+    @PreAuthorize("isAuthenticated()")
     public String uploadImage(MultipartFile file){//xử lý file
         try{
             var result =cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(//chuyển dữ liệu sang dạng byte rồi upload
@@ -28,5 +37,37 @@ public class CloudinaryService {
         } catch (IOException e) {
             throw new RuntimeException("Image upload fail");
         }
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    public String getImage(){
+        String email= SecurityUtils.getCurrentLogin()
+                .orElseThrow(()->new BadCredentialException("Bạn chưa đăng nhập"));
+        User user =userRepository.findByEmail(email)
+                .orElseThrow(()->new NotFoundException("User not found"));
+
+        return (user.getAvatarUrl() != null )?user.getAvatarUrl() : "";
+    }
+
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public void updateImage(String url){
+        String email= SecurityUtils.getCurrentLogin()
+                .orElseThrow(()->new BadCredentialException("Bạn chưa đăng nhập"));
+        User user =userRepository.findByEmail(email)
+                .orElseThrow(()->new NotFoundException("User not found"));
+
+        user.setAvatarUrl(url);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteAvatar(){
+        String email= SecurityUtils.getCurrentLogin()
+                .orElseThrow(()->new BadCredentialException("Bạn chưa đăng nhập"));
+        User user =userRepository.findByEmail(email)
+                .orElseThrow(()->new NotFoundException("User not found"));
+        user.setAvatarUrl(null);
+        userRepository.save(user);
     }
 }

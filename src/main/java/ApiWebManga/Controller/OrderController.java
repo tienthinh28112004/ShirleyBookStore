@@ -1,7 +1,6 @@
 package ApiWebManga.Controller;
 
 import ApiWebManga.Enums.OrderStatus;
-import ApiWebManga.Enums.PaymentExpression;
 import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.OrderRequest;
 import ApiWebManga.dto.Response.OrderResponse;
@@ -39,7 +38,7 @@ public class OrderController {
                 .build();
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/getHistoryOrder")
     public ApiResponse<List<OrderResponse>> getHistoryOrder() {
         return ApiResponse.<List<OrderResponse>>builder()
@@ -47,6 +46,8 @@ public class OrderController {
                 .result(orderService.findOrderByUser())
                 .build();
     }
+
+
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/getOrderRecent")
     public ApiResponse<PageResponse<List<OrderResponse>>> getOrderRecent(
@@ -72,15 +73,7 @@ public class OrderController {
                 .build();
     }
 
-    @PreAuthorize("hasAuthority('USER')")
-    @PatchMapping("/{orderId}/paymentStatus")
-    public ApiResponse<?> updateStatusPayment(
-            @PathVariable Long orderId,
-            @RequestParam String newStatus
-    ) {
-        orderService.updatePaymentExpression(orderId, PaymentExpression.valueOf(newStatus));
-        return ApiResponse.<Void>builder()
-                .message("update Status Payment")
-                .build();
-    }
 }
+//supplier riêng biệt hoàn toàn
+//user bình thường nhưng mà được nâng cấp quyền lên nhà cung cấp =>
+//supplier thì người dùng đăng kí với lại admin sau đó admin tạo tài khoản mới đưa cho người dùng

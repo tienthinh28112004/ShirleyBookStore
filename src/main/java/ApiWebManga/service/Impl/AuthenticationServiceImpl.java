@@ -230,21 +230,27 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Roles roles = rolesRepository.findByName(String.valueOf(Role.USER))
                 .orElseThrow(()->new NotFoundException("Role not found"));
         //nếu tồn tại user rồi thì thôi còn không thì tạo mới
-        User user = userRepository.findByEmail(userInfo.getEmail()).orElseGet(()->userRepository.save(User.builder()
-                        .email(userInfo.getEmail())
-                        .fullName(userInfo.getName())
-                        .avatarUrl(userInfo.getPicture())
-                        .isActive(userInfo.isVerified())
-                        .emailVerifiedAt(userInfo.isVerified()?LocalDateTime.now():null)
-                .build()));
+        User user = userRepository.findByEmail(userInfo.getEmail()).orElse(null);
+        if(user==null){//tức là chưa có user này
+            user=User.builder()
+                    .email(userInfo.getEmail())
+                    .fullName(userInfo.getName())
+                    .avatarUrl(userInfo.getPicture())
+                    .isActive(userInfo.isVerified())
+                    .emailVerifiedAt(userInfo.isVerified()?LocalDateTime.now():null)
+                    .build();
+            userRepository.save(user);
 
-        Set<UserHasRoles> rolesList = new HashSet<>();
-        UserHasRoles userHasRole=UserHasRoles.builder()
-                .role(roles)
-                .user(user)
-                .build();
-        rolesList.add(userHasRole);
-        user.setUserHasRoles(rolesList);
+            Set<UserHasRoles> rolesList = new HashSet<>();
+            UserHasRoles userHasRole=UserHasRoles.builder()
+                    .role(roles)
+                    .user(user)
+                    .build();
+            rolesList.add(userHasRole);
+            user.setUserHasRoles(rolesList);
+        }
+
+
 
         String accessToken= jwtService.generateAccessToken(user);
         String refreshToken= jwtService.generateRefreshToken(user);

@@ -33,8 +33,8 @@ public class WebSecurityConfig {
     private static final String[] White_List = {
             "/auth/**",
             "/books/getBook/{id}",
-            "/books/books-search-criteria/**",
-            "/books/books-search-keyword/**",
+            "/books/book-search-criteria/**",
+            "/books/book-search-keyword/**",
             "/books/bookList",
             "/chapter/getChapterById/{chapterId}",
             "/chapter/findPrevChapter/{bookId}/{chapterId}",

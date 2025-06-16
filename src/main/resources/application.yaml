@@ -31,12 +31,12 @@ spring:
       client:
         registration:
           google:
-            client-id: 736823866965-3h27864u4op3cojn478q2cspvqlpuv3o.apps.googleusercontent.com
-            client-secret: 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
+            client-id: 758572189569-fo0ejindercjhnetv610g29hv807bir5.apps.googleusercontent.com
+            client-secret: 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
             redirect-uri: http://localhost:3000/oauth2/callback/google
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
   datasource:
-    url: jdbc:mysql://localhost:3306/apiWebManga
+    url: jdbc:mysql://localhost:3306/serleyBookStore
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: admin

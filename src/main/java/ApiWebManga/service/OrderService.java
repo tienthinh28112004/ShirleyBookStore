@@ -15,7 +15,6 @@ public interface OrderService {
 
     void updateOrderStatus(Long orderId, OrderStatus newStatus);
     void updatePaymentExpression(Long orderId, PaymentExpression newPayment);
-
     PageResponse<List<OrderResponse>> orderRecent(int page, int size);
 
 }

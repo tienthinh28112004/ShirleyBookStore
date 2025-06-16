@@ -46,8 +46,8 @@ public class ApplicationInitConfig {
                         .build());
             }
 
-            Optional<Roles> roleSupplier = rolesRepository.findByName(String.valueOf(Role.AUTHOR));
-            if(roleSupplier.isEmpty()) {
+            Optional<Roles> roleAuthor = rolesRepository.findByName(String.valueOf(Role.AUTHOR));
+            if(roleAuthor.isEmpty()) {
                 rolesRepository.save(Roles.builder()
                         .name(String.valueOf(Role.AUTHOR))
                         .description("Supplier role")
@@ -73,17 +73,21 @@ public class ApplicationInitConfig {
                             .emailVerifiedAt(LocalDateTime.now()) // có thể set luôn nếu muốn
                             .build();
 
-                    // Tạo quan hệ role
-                    UserHasRoles userHasRole = UserHasRoles.builder()
-                            .user(user)           // set chiều user → role
-                            .role(rolesAdmin)
-                            .build();
+                    // Lấy các vai trò đã có từ DB
+                    Roles adminRoleEntity = rolesRepository.findByName(Role.ADMIN.name())
+                            .orElseThrow(() -> new RuntimeException("Role ADMIN not found"));
+                    Roles userRoleEntity = rolesRepository.findByName(Role.USER.name())
+                            .orElseThrow(() -> new RuntimeException("Role USER not found"));
+                    Roles authorRoleEntity = rolesRepository.findByName(Role.AUTHOR.name())
+                            .orElseThrow(() -> new RuntimeException("Role AUTHOR not found"));
 
-                    // Gắn set role vào user
+                    // Tạo các liên kết UserHasRoles
                     Set<UserHasRoles> userHasRoles = new HashSet<>();
-                    userHasRoles.add(userHasRole);
-                    user.setUserHasRoles(userHasRoles); // set chiều role → user
+                    userHasRoles.add(UserHasRoles.builder().user(user).role(adminRoleEntity).build());
+                    userHasRoles.add(UserHasRoles.builder().user(user).role(userRoleEntity).build());
+                    userHasRoles.add(UserHasRoles.builder().user(user).role(authorRoleEntity).build());
 
+                    user.setUserHasRoles(userHasRoles);
                     // Lưu user (sẽ cascade lưu luôn UserHasRole)
                     userRepository.save(user);
                     log.info("Admin account has been created.");

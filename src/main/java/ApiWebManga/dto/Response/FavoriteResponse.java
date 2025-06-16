@@ -31,7 +31,7 @@ public class FavoriteResponse {
                 .priceBook(favorite.getBook().getPrice())
                 .title(favorite.getBook().getTitle())
                 .thumbnail(favorite.getBook().getThumbnail())
-                .author(favorite.getBook().getAuthor().getFullName())
+                .author(favorite.getBook().getAuthor()!=null?favorite.getBook().getAuthor().getFullName():favorite.getBook().getAuthorName())
                 .build();
     }
 }

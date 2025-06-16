@@ -1,5 +1,6 @@
 package ApiWebManga.Entity;
 
+import ApiWebManga.Enums.RegistrationStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,7 +49,29 @@ public class User extends AbstractEntity<Long> implements UserDetails {
 
     @Column(name = "date_of_birth")
     @Temporal(TemporalType.DATE)
-    LocalDate birthday;
+    private LocalDate birthday;
+
+    @Column(name = "expertise")
+    private String expertise;
+
+    @Column(name = "yearsOfExperience")
+    private Double yearsOfExperience;
+
+    @Column(name = "bio")
+    private String bio;
+
+    @Column(name = "certificate")
+    private String certificate;
+
+    @Column(name = "cvUrl")
+    private String cvUrl;
+
+    @Column(name = "facebookLink")
+    private String facebookLink;
+
+    @Column(name = "registrationStatus")
+    @Enumerated(EnumType.STRING)
+    private RegistrationStatus registrationStatus;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE)
     @JsonManagedReference

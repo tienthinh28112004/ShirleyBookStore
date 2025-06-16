@@ -1,57 +1,41 @@
 #docker-compose up -d câu lệnh chạy docker trên cmd
 services: #định nghĩa danh sách các dịch vụ(container) chạy cùng nhau
-  kafka: #tên dịch vụ(có thể ặt bất kì nhưng ở đy đặt kafka
-    image: 'bitnami/kafka:3.7.0' #chỉ định image docker sẽ được sử dụng
-    container_name: kafka #tên của container khi nó chạy(nếu không có docker sẽ lấy tên ngẫu nhiên)
-    hostname: kafka #các container khác trong cùng mạng có thểm tham chiếu đến container này bằng hostname
+  kafka:
+    image: 'bitnami/kafka:3.7.0'
+    container_name: kafka
+    hostname: kafka
     ports:
-      - '9094:9094' #map cổng 9094 của container ra cổng 9094 của máy host,điều naày cho phép kết nối kafks từ máy host hoặc từ xa thông qua cổng này
-      #lần lượt là (cổng trên máy tính(host),cổng bên trong docker(container))
-    environment: #định nghĩa các biến môi trường sẽ được truyền vào container
+      - '9094:9094'
+    environment:
       - KAFKA_CFG_NODE_ID=0
-      #thiết lập id của node Kafka là 0 (trong cụm kafka mỗi node phải có một id duy nhât)
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      #thiết lập vai tr của process này là cả controller và broker(trong kraft mode sử dụng controller để quản lý metadata)
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      #cấu hình quorum voters cho controller với node Id 0,hostname "kafka" và port 9093,đây là danh sách các controller tham gia vào quorum để đảm bảo tính nhất quán
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      #Cấu hình các listeners(kênh lắng nghe) mà Kafka sẽ sử dụng:(XÁC ĐỊNH BROKER SẼ LẮNG NGHE Ở ĐÂU)
-      #1,PLAINTEXT://:9092 Giao tiếp nội bộ giữa cácứng dụng trong cùng 1 mạng docker
-      #2,CONTROLLER://:9093 Giao tiếp giữa các controller
-      #3,EXTERNAL://:9094 Giao tiếp từ bên ngoài mạng docker
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
-      #địa chỉ mà Kafka sẽ quảng bá cho clients(XÁC ĐỊNH CLIENT NÊN KẾT NỐI Ở ĐÂU,liên quan trức tiếp đêến cổng trong file yaml)
-      #1,PLAINTEXT://kafka:9092 Địa chỉ cho client nội bộ trong mạng docker
-      #2,EXTERNAL://localhost:9094 Địa chỉ của client bên ngoài connect vào((điều này đặc biệt quan trọng vì cổng trong project sử dụng là 9094,nên cần dòng bên trên để map 2 cổng 9094 của project và docker lại với nhau thì mới giao tiếp được))
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      #map gia thức bảo mật cho từng listener đã được định nghĩa bên trên(tất cả đều dùng palintext(không mã hóa))
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      #chỉ định listener nào được sử dụng cho controller(ở đây là CONTROLLER)
     volumes:
       - kafka-data:/tmp/kraft-combined-logs
-      #tạo 1 volume Docker tên là kafka-data và mount vào thư mục "/tmp/kraft-combined-logs" trong container
-      #đây là nơi Kafka lưu trữ dữ liệu giúp ữ liệu được bảo vệ ngay cả khi container bị xóa
   redis:
-    image: redis:8.0-M03-alpine #Sử dụng Redis phiên bản 8.0-M03 với Alpine Linux(nhẹ hơn)(do docker dùng môi trường linux nên ở đây có thể dùng linux giúp nhẹ hơn)
-    container_name: redis #Đặt tên conatiner là redis
+    image: redis:8.0-M03-alpine
+    container_name: redis
     ports:
-      - "6379:6379" #lần lượt là (cổng trên máy tính(host),cổng bên trong docker(container))
-      #khác với kafka cần cấu hình thêm advertised.listeners để hoạt động đúng thì redis không cn fcaaus hình thêm gì cả mà hoatj động được luôn
+      - "6379:6379"
     volumes:
-      - cache:/data #gắn volume cache để lưu dữ liệu redis(giữ lại kể cả khi container bị tắt)
+      - cache:/data
 
   elastic-search:
-    image: elasticsearch:7.14.1 #sử dụng phiên bản 7.14.1
-    container_name: elasticsearch #đặt tên cho container
-    restart: always #tự khởi động lại container nếu bị lỗi hoặc khi hệ thống khởi động lại
+    image: elasticsearch:7.14.1
+    container_name: elasticsearch
+    restart: always
     ports:
-      - "9200:9200" #lần lượt là (cổng trên máy tính(host),cổng bên trong docker(container))
+      - "9200:9200"
     environment:
-      - discovery.type=single-node #giúp elaticsearch chạy ở chế độ đơn lẻ không cần cluster
+      - discovery.type=single-node
     volumes:
-      - es-data:/usr/share/elasticsearch/data #lưu giữ lệu lại kể cả khi container bị xóa
+      - es-data:/usr/share/elasticsearch/data
     networks:
-      - default #default giúp container này kết nối với các container khác qua maạng deafult
+      - default
 volumes:
   kafka-data:
     driver: local #dòng này để kể cả khi tắt container dữ liệu cũng không bị mất

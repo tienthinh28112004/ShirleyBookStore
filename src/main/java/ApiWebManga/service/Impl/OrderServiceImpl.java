@@ -1,9 +1,6 @@
 package ApiWebManga.service.Impl;
 
-import ApiWebManga.Entity.Book;
-import ApiWebManga.Entity.Order;
-import ApiWebManga.Entity.OrderDetail;
-import ApiWebManga.Entity.User;
+import ApiWebManga.Entity.*;
 import ApiWebManga.Enums.OrderStatus;
 import ApiWebManga.Enums.PaymentExpression;
 import ApiWebManga.Exception.NotFoundException;
@@ -13,6 +10,7 @@ import ApiWebManga.dto.Request.OrderRequest;
 import ApiWebManga.dto.Response.OrderResponse;
 import ApiWebManga.dto.Response.PageResponse;
 import ApiWebManga.repository.BookRepository;
+import ApiWebManga.repository.NotificationRepository;
 import ApiWebManga.repository.OrderRepository;
 import ApiWebManga.repository.UserRepository;
 import ApiWebManga.service.CartService;
@@ -44,6 +42,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
+    private final NotificationRepository notificationRepository;
     private final CartService cartService;
     //cái anyf sẽ chỉ được động bởi admin
 
@@ -84,13 +83,30 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderDetails(orderDetails);
         order.setTotalMoney(totalMoney);
         orderRepository.save(order);
+
+        Notification notification = Notification.builder()
+                .user(user)//thông tin người nhận
+                .message("Bạn vừa đặt 1 đơn hàng với id "+order.getId()+",vui lòng bấm vào profile để xem thông tin chi tiết đơn hàng")
+                .title("Đơn hàng của bạn")
+                .url(null)
+                .isRead(false)//người nhận chưa đọc
+                .avatarUrl(user.getAvatarUrl())
+                .build();
+
+        notificationRepository.save(notification);
+
         return OrderResponse.convert(order);
     }
     //lấy ra danh sách lịch sử ngươời dùng đã order
     public List<OrderResponse> findOrderByUser(){
         String email= SecurityUtils.getCurrentLogin().orElseThrow(()->new NotFoundException("người dùng chưa đăng nhập"));
         User user=userRepository.findByEmail(email).orElseThrow(()->new NotFoundException("User not found"));
-        List<Order> orderList=orderRepository.findOrderByUserId(user.getId());
+        // Create a Sort object with descending order by id
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+
+        // Execute the repository method with the pageable parameter
+        List<Order> orderList = orderRepository.findOrderByUserId(user.getId(), sort);
+
         return orderList.stream().map(OrderResponse::convert).collect(Collectors.toList());
     }
 

@@ -27,6 +27,7 @@ public class BookDetailResponse implements Serializable {
     private String thumbnail;
     private String bookPath;
     private String category;
+    private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<Chapter> chapter;
@@ -36,12 +37,13 @@ public class BookDetailResponse implements Serializable {
         book.getCategory().stream().map(bookHasCategory ->bookHasCategory.getCategory().getName()).forEach(joiner::add);
         return BookDetailResponse.builder()
                         .id(book.getId())
-                        .authorName(book.getAuthor().getFullName())
-                        .authorId(book.getAuthor().getId())
+                        .authorName(book.getAuthorName()!=null ? book.getAuthorName():book.getAuthor().getFullName())
+                        .authorId(book.getAuthor()!=null?book.getAuthor().getId():null)
                         .title(book.getTitle())
                         .isbn(book.getIsbn())
                         .description(book.getDescription())
                         .price(book.getPrice())
+                        .isActive(book.getIsActive())
                         .chapter(book.getChapters())
                         .thumbnail(book.getThumbnail())
                         .bookPath(book.getBookPath())

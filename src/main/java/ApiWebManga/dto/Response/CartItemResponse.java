@@ -23,7 +23,7 @@ public class CartItemResponse implements Serializable {
     public static CartItemResponse convert(CartDetail cartDetail){
         return CartItemResponse.builder()
                 .bookId(cartDetail.getBook().getId())
-                .authorName(cartDetail.getBook().getAuthor().getFullName())
+                .authorName(cartDetail.getBook().getAuthor()!=null?cartDetail.getBook().getAuthor().getFullName():cartDetail.getBook().getAuthorName())
                 .title(cartDetail.getBook().getTitle())
                 .priceBook(cartDetail.getBook().getPrice())
                 .thumbnail(cartDetail.getBook().getThumbnail())

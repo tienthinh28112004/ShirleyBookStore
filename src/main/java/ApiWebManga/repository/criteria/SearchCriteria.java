@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class SearchCriteria {
-    private String key;//tên của các cột
-    private String operation;//>,<,>=,<=
-    private Object value;//có nhiều dạng nên ta để Object
+    private String key;
+    private String operation;
+    private Object value;
 }

@@ -22,7 +22,7 @@ public class UserResponse {
     private String email;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthday;
-    private CartTotalResponse cart;
+    //private CartTotalResponse cart;
     private boolean isActive;
     private String phoneNumber;
     private LocalDateTime createdAt;
@@ -37,7 +37,7 @@ public class UserResponse {
                 .isActive(user.isActive())
                 .birthday(user.getBirthday())
                 .avatarUrl(user.getAvatarUrl())
-                .cart(CartTotalResponse.convert(user.getCart()))
+                //.cart(CartTotalResponse.convert(user.getCart()))
                 .createdAt(user.getCreatedAt())
                 .phoneNumber(user.getPhoneNumber())
                 .role(role)

@@ -4,6 +4,8 @@ import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.UserCreationRequest;
 import ApiWebManga.dto.Request.UserUpdateRequest;
 import ApiWebManga.dto.Response.PageResponse;
+import ApiWebManga.dto.Response.TeacherApplicationDetailResponse;
+import ApiWebManga.dto.Response.UserRegisterAuthorResponse;
 import ApiWebManga.dto.Response.UserResponse;
 import ApiWebManga.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -66,20 +67,17 @@ public class UserController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @PatchMapping("/update/{userId}")
+    @PatchMapping("/update")
     @Operation(summary = "Update user endpoint")
     public ApiResponse<UserResponse> updateUser(
-            @Parameter(description = "userID", required = true)
-            @PathVariable("userId") Long userId,
-            @Parameter(description = "Request body to user update", required = true)
-            @RequestPart @Valid UserUpdateRequest request,//không thể gửi cùng lúc requestPart vs requestBody được nên ở đây ta phải gửi theo part rồi convert sang application/json
-            @RequestPart(name = "avatarPdf", required = false) MultipartFile avatarPdf) {
+            @Valid @RequestBody UserUpdateRequest request
+    ) {
         return ApiResponse.<UserResponse>builder()
                 .message("update User")
-                .result(UserResponse.convert(userService.update(userId,request,avatarPdf)))
+                .result(UserResponse.convert(userService.update(request)))
                 .build();
-
     }
+
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PatchMapping("/banUser/{userId}")
@@ -117,12 +115,32 @@ public class UserController {
     @PreAuthorize("hasAuthority('ADMIN')")
     @PatchMapping("/updateRoleAuthor/{userId}")
     @Operation(summary = "Upload Role")
-    public ApiResponse<Void> updateRoleAuthor(
+    public ApiResponse<UserRegisterAuthorResponse> updateRoleAuthor(
             @Parameter(name = "id", description = "User ID", required = true)
             @PathVariable("userId") Long userId){
-        userService.updateRoleAuthor(userId);
-        return ApiResponse.<Void>builder().
+        return ApiResponse.<UserRegisterAuthorResponse>builder()
+                .message("Update successfully")
+                .result(userService.updateRoleAuthor(userId))
+                .build();
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/banAuthor/{userId}")
+    @Operation(summary = "Upload Role")
+    public ApiResponse<UserRegisterAuthorResponse> banAuthor(
+            @Parameter(name = "id", description = "User ID", required = true)
+            @PathVariable("userId") Long userId){
+        userService.banAuthor(userId);
+        return ApiResponse.<UserRegisterAuthorResponse>builder().
                 message("Update successfully").
+                build();
+    }
+    @GetMapping("/{userId}/details")
+    public ApiResponse<TeacherApplicationDetailResponse> getUserApplicationDetail(@PathVariable Long userId) {
+        TeacherApplicationDetailResponse details = userService.getUserApplicationDetail(userId);
+        return ApiResponse.<TeacherApplicationDetailResponse>builder().
+                message("Update successfully").
+                result(details).
                 build();
     }
 }
