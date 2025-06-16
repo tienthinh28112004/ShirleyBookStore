@@ -18,6 +18,6 @@ public class Category {//hên xui nếu cần có thể xóa
     @Column(name="name",nullable = false)
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", nullable = false, columnDefinition = "LONGTEXT")
     private String description;
 }

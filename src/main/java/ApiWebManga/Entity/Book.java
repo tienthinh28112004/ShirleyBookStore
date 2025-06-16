@@ -24,7 +24,7 @@ public class Book extends AbstractEntity<Long> {
     @Column(name = "isbn", nullable = false, unique = true)
     private String isbn;
 
-    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "description", nullable = false, columnDefinition = "LONGTEXT")
     private String description;
 
     @Column(name = "price", nullable = false)
@@ -33,8 +33,8 @@ public class Book extends AbstractEntity<Long> {
     @Column(name = "stock")
     private Long stock;
 
-    @Column(name = "publisher", nullable = false)
-    private String publisher;
+//    @Column(name = "publisher", nullable = false)
+//    private String publisher;
 
     @Column(name = "thumbnail", nullable = false, columnDefinition = "TEXT")
     private String thumbnail;
@@ -42,14 +42,20 @@ public class Book extends AbstractEntity<Long> {
     @Column(name = "book_path", columnDefinition = "TEXT")
     private String bookPath;
 
+    @Column(name = "author_name")
+    private String authorName;
+
     @Column(name = "view")
     @ColumnDefault("0")
     private Long views;
 
+    @Column(name = "is_active")
+    private Boolean isActive;
+
     @Column(name = "published_date")
     private LocalDate publishedDate;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User author;
 

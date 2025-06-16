@@ -1,5 +1,6 @@
 package ApiWebManga.Controller;
 
+import ApiWebManga.dto.Request.AdminUploadBookRequest;
 import ApiWebManga.dto.Request.ApiResponse;
 import ApiWebManga.dto.Request.BookCreationRequest;
 import ApiWebManga.dto.Response.BookDetailResponse;
@@ -35,6 +36,17 @@ public class BookController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping(value = "/admin/upload-books")
+    public ApiResponse<BookDetailResponse> uploadBook(@RequestPart(name = "request") AdminUploadBookRequest request,//json
+                                                      @RequestPart(name = "thumbnail") MultipartFile thumbnail//file
+            ){
+        return ApiResponse.<BookDetailResponse>builder()
+                .message("admin upload book successfully")
+                .result(bookService.adminUploadBook(request,thumbnail))
+                .build();
+    }
+
     @Operation(summary = "getBookById", description = "information book by id")
     @GetMapping("/getBook/{id}")
     public ApiResponse<?> getBookById(@PathVariable Long id) {
@@ -43,16 +55,40 @@ public class BookController {
                 .result(bookService.getBookId(id))
                 .build();
     }
+    @Operation(summary = "getBookById", description = "information book by id")
+    @PatchMapping("/toggleStatus/{id}")
+    public ApiResponse<?> toggleBookStatus(@PathVariable Long id) {
+        return ApiResponse.<BookDetailResponse>builder()
+                .message("information book succesfully")
+                .result(bookService.toggleBookStatus(id))
+                .build();
+    }
     //có sự khác bieetj giữa ấy ra danh sách user và lấy ra danh sách sách
 //    @PreAuthorize("hasAuthority('USER')")
     @Operation(summary = "listBook", description = "information list book wiht page,size")
     @GetMapping("/bookList")
-    public ApiResponse<?> getAll(@RequestParam(required = false,defaultValue = "1") int page,
-                                 @RequestParam(required = false,defaultValue = "10") int size
+    public ApiResponse<?> getAllBook(@RequestParam(required = false,defaultValue = "1") int page,
+                                 @RequestParam(required = false,defaultValue = "10") int size,
+                                 @RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) String sorts
     ) {
         return ApiResponse.<PageResponse<List<BookDetailResponse>>>builder()
                 .message("information book succesfully")
-                .result(bookService.getAllBook(page,size))
+                .result(bookService.getAllBook(page,size,keyword,sorts))
+                .build();
+    }
+
+    @GetMapping("/bookListByAuthor")
+    public ApiResponse<PageResponse<List<BookDetailResponse>>> getBookByAuthor(
+                                @RequestParam(required = false,defaultValue = "1") int page,
+                                 @RequestParam(required = false,defaultValue = "10") int size,
+                                 @RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) String sorts
+    ) {
+        log.info("abcde {},{},{},{}",page,size,keyword,sorts);
+        return ApiResponse.<PageResponse<List<BookDetailResponse>>>builder()
+                .message("information book succesfully")
+                .result(bookService.getBookByAuthor(page,size,keyword,sorts))
                 .build();
     }
 

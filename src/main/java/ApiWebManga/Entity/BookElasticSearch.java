@@ -16,12 +16,10 @@ import java.io.Serializable;
 @Setter
 @Builder
 public class BookElasticSearch implements Serializable {
-    //chú ý:nếu class này thay đổi trong tương lai thì cần tạo serialVersionUID(tự tra mạng sẽ hiểu::)
     @Id
     private Long id;
 
     @Field(name="title",type = FieldType.Text)
-    //đánh dấu là 1 trường trong elasticsearch,nó sẽ được lưu trữ và phân tích từ khóa để hỗ tợ tìm kiếm toàn văn
     private String title;
 
     @Field(name="isbn",type = FieldType.Text)

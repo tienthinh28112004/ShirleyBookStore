@@ -130,7 +130,7 @@ public class CartServiceImpl implements CartService {
         List<CartItemResponse> carts= user.getCart().getCartDetails().stream()
                 .map(CartItemResponse::convert).toList();
         return CartTotalResponse.builder()
-                .cartId(user.getCart().getId())
+                //.cartId(user.getCart().getId())
                 .userId(user.getId())
                 .totalElements(totalElements)
                 .totalMoney(totalMoney)

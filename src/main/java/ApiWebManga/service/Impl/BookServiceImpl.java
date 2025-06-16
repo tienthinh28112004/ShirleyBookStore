@@ -4,13 +4,11 @@ import ApiWebManga.Entity.*;
 import ApiWebManga.Exception.BadCredentialException;
 import ApiWebManga.Exception.NotFoundException;
 import ApiWebManga.Utils.SecurityUtils;
+import ApiWebManga.dto.Request.AdminUploadBookRequest;
 import ApiWebManga.dto.Request.BookCreationRequest;
 import ApiWebManga.dto.Response.BookDetailResponse;
 import ApiWebManga.dto.Response.PageResponse;
-import ApiWebManga.repository.BookRepository;
-import ApiWebManga.repository.CategoryRepository;
-import ApiWebManga.repository.SearchRepository;
-import ApiWebManga.repository.UserRepository;
+import ApiWebManga.repository.*;
 import ApiWebManga.service.BookService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -20,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -27,6 +26,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +44,7 @@ public class BookServiceImpl implements BookService {
     private final SearchRepository searchRepository;
     private final CategoryRepository categoryRepository;
     private final KafkaTemplate<String,Object> kafkaTemplate;
+    private final BookElasticRepository bookElasticRepository;
     @Override
     public BookDetailResponse uploadBook(BookCreationRequest request,
                                          MultipartFile thumbnail,
@@ -75,8 +78,9 @@ public class BookServiceImpl implements BookService {
                 .price(request.getPrice())
                 .thumbnail(thumbnailUrl)
                 .bookPath(bookPath)
+                .isActive(false)
                 .author(user)
-                .publisher(email)
+//                .publisher(email)
                 .build();
         List<BookHasCategory> bookHasCategories = new ArrayList<>();
         //request.getCategoriesId().stream().map(categoryRepository::findById).forEach(bookHasCategories.);
@@ -100,6 +104,7 @@ public class BookServiceImpl implements BookService {
                 .authorName(book.getAuthor().getFullName())
                 .description(book.getDescription())
                 .build();
+        bookElasticRepository.save(bookElasticSearch);
         //kafkaTemplate là một Spring Kafka helper giúp bạn gửi message đến Kafka dễ dàng.
         //kafkaTemplate.send("save-to-elastic-search",bookElasticSearch);đã kịp làm đâu:))
         //gửi thông báo sang kafka để lưu bookElasticSerch vào topic save-to-elastic-search,tiếp tục xử lí tại kafkaService
@@ -122,6 +127,40 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    public BookDetailResponse adminUploadBook(AdminUploadBookRequest request, MultipartFile thumbnail) {
+
+        String thumbnailUrl = null;
+        if (thumbnail != null) {
+            thumbnailUrl = cloudinaryService.uploadImage(thumbnail);
+        }
+
+        Book book = Book.builder()
+                .title(request.getTitle())
+                .isbn(request.getIsbn())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .authorName(request.getAuthorName())
+                .thumbnail(thumbnailUrl)
+                .isActive(true)
+                .build();
+        List<BookHasCategory> bookHasCategories = new ArrayList<>();
+        //request.getCategoriesId().stream().map(categoryRepository::findById).forEach(bookHasCategories.);
+        for(int i=0;i<request.getCategoriesId().size();i++){
+            Category category = categoryRepository.findById(request.getCategoriesId().get(i))
+                    .orElseThrow(()->new NotFoundException("Category not found"));
+            bookHasCategories.add(BookHasCategory.builder()
+                    .book(book)
+                    .category(category)
+                    .build());
+        }
+        book.setCategory(bookHasCategories);
+        bookRepository.save(book);
+        StringJoiner joiner= new StringJoiner(",");
+        book.getCategory().stream().map(bookHasCategory ->bookHasCategory.getCategory().getName()).forEach(joiner::add);
+        return BookDetailResponse.convert(book);
+    }
+
+    @Override
     public BookDetailResponse getBookId(Long id) {
         log.info("Get Book By Id {}",id);
         Book book=bookRepository.findById(id)
@@ -130,22 +169,88 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public PageResponse<List<BookDetailResponse>> getAllBook(int page, int size) {
-        Pageable pageable= PageRequest.of(page -1,size);//để cho khi fontend lấy trang từ 1
-        Page<Book> bookPage = bookRepository.findAll(pageable);
+    public BookDetailResponse toggleBookStatus(Long id) {
+        Book book=bookRepository.findById(id)
+                .orElseThrow(()->new NotFoundException("Book not found"));
+        book.setIsActive(!book.getIsActive());
+        bookRepository.save(book);
+        return BookDetailResponse.convert(book);
+    }
 
-        List<Book> books =bookPage.getContent();
+    @Override
+    public PageResponse<List<BookDetailResponse>> getAllBook(int page, int size,String keyword,String sorts) {
+        //sort
+        List<Sort.Order> orders=new ArrayList<>();
 
-        List<BookDetailResponse> bookDetailResponses=books.stream().map(BookDetailResponse::convert).collect(Collectors.toList());
+        if(sorts!=null) {
+            log.info("vào đến đấy?");
+            Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
+            Matcher matcher = pattern.matcher(sorts);
+            if (matcher.find()) {
+                if (matcher.group(3).equalsIgnoreCase("asc")) {
+                    orders.add(new Sort.Order(Sort.Direction.ASC, matcher.group(1)));
+                } else {
+                    orders.add(new Sort.Order(Sort.Direction.DESC, matcher.group(1)));
+                }
+            }
+        }
 
+        //Paging
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(orders));
+        Page<Book> bookPage = null;
+        if (StringUtils.hasLength(keyword)) {
+            bookPage = bookRepository.findAllByKeyword(pageable, keyword);
+        } else {
+            bookPage = bookRepository.findAll(pageable);
+        }
+        List<BookDetailResponse> bookList=bookPage.stream().map(BookDetailResponse::convert).toList();
         return PageResponse.<List<BookDetailResponse>>builder()
-                .pageNo(page)//curentPage
-                .pageSize(pageable.getPageSize())
+                .pageNo(page)
+                .pageSize(size)
                 .totalPages(bookPage.getTotalPages())
-                .items(bookDetailResponses)//???
-                .totalElements(bookPage.getTotalElements())
+                .items(bookList)
+                .totalElements(bookList.size())
                 .build();
-        //books là 1 danh sách sao wor đây không tolisst được@@@
+    }
+
+    @Override
+    public PageResponse<List<BookDetailResponse>> getBookByAuthor(int page, int size, String keyword, String sorts) {
+        String email=SecurityUtils.getCurrentLogin()
+                .orElseThrow(()->new BadCredentialException("Bạn chưa đăng nhập"));
+        User user=userRepository.findByEmail(email)
+                .orElseThrow(()->new NotFoundException("User not found"));
+        //sort
+        List<Sort.Order> orders=new ArrayList<>();
+
+        if(sorts!=null) {
+            log.info("vào đến đấy?");
+            Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
+            Matcher matcher = pattern.matcher(sorts);
+            if (matcher.find()) {
+                if (matcher.group(3).equalsIgnoreCase("asc")) {
+                    orders.add(new Sort.Order(Sort.Direction.ASC, matcher.group(1)));
+                } else {
+                    orders.add(new Sort.Order(Sort.Direction.DESC, matcher.group(1)));
+                }
+            }
+        }
+
+        //Paging
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(orders));
+        Page<Book> bookPage = null;
+        if (StringUtils.hasLength(keyword)&&keyword!=null) {
+            bookPage = bookRepository.findAllByKeywordAndUserId(pageable, keyword,user.getId());
+        } else {
+            bookPage = bookRepository.findAllByUserId(pageable,user.getId());
+        }
+        List<BookDetailResponse> bookList=bookPage.stream().map(BookDetailResponse::convert).toList();
+        return PageResponse.<List<BookDetailResponse>>builder()
+                .pageNo(page)
+                .pageSize(size)
+                .totalPages(bookPage.getTotalPages())
+                .items(bookList)
+                .totalElements(bookList.size())
+                .build();
     }
 
     @Override
